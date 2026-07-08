@@ -1,0 +1,421 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ========= Design system tokens (CSS variables) ========= */
+
+    /* ========= ORGMIGRA brand palette ========= */
+    --orgmigra-blue: #194e93;
+    --orgmigra-blue-dark: #184890;
+    --orgmigra-blue-light: #3d73ad;
+    --orgmigra-green: #65b244;
+    --orgmigra-green-dark: #60b040;
+    --orgmigra-purple: #8c5dac;
+    --orgmigra-purple-dark: #8858a8;
+    --orgmigra-yellow: #f9bd2c;
+    --orgmigra-yellow-dark: #f8b828;
+
+    /* Brand accents — observatório institucional (mapeados ORGMIGRA) */
+    --ds-accent-teal: var(--orgmigra-blue);
+    --ds-accent-teal-light: var(--orgmigra-blue-light);
+    --ds-accent-amber: var(--orgmigra-yellow-dark);
+    --ds-accent-amber-light: var(--orgmigra-yellow);
+    --ds-accent-cyan: var(--orgmigra-blue-light);
+    --ds-accent-sky: var(--orgmigra-blue);
+    --ds-accent-indigo: var(--orgmigra-blue-dark);
+    --ds-accent-purple: var(--orgmigra-purple);
+    --ds-accent-yellow: var(--orgmigra-yellow);
+    --ds-accent-green: var(--orgmigra-green);
+    --ds-accent-rose: #e11d48;
+    --ds-accent-blue-support: var(--orgmigra-blue);
+    --ds-accent-purple-muted: var(--orgmigra-purple-dark);
+
+    /* Chart — eixos, grid e tooltips claros */
+    --ds-chart-grid: #e2e8f0;
+    --ds-chart-tick: #64748b;
+    --ds-chart-label: #475569;
+    --ds-chart-tooltip-bg: #ffffff;
+    --ds-chart-tooltip-border: rgba(15, 23, 42, 0.12);
+    --ds-chart-tooltip-text: #0f172a;
+    --ds-chart-cursor: rgba(25, 78, 147, 0.08);
+
+    --ds-text-primary: #0f172a;
+    --ds-text-secondary: #475569;
+    --ds-text-muted: #64748b;
+    --ds-text-accent-label: rgba(25, 78, 147, 0.92);
+
+    /* Surfaces — tema claro institucional */
+    --ds-surface-page: #f4f7fa;
+    --ds-surface-shell: #ffffff;
+    --ds-surface-card: #ffffff;
+    --ds-surface-kpi: #ffffff;
+    --ds-surface-muted: rgba(15, 23, 42, 0.04);
+
+    /* Borders & shadows — cards claros */
+    --ds-border: rgba(15, 23, 42, 0.1);
+    --ds-border-subtle: rgba(15, 23, 42, 0.06);
+    --ds-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.06);
+    --ds-shadow-shell: 0 1px 2px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.06);
+
+    /* Shell layout — mapa fixo alinhado à área principal (lg+) */
+    --ds-shell-margin-left: 1rem;
+    --ds-sidebar-width: 14rem;
+    --ds-sidebar-gap: 1.25rem;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply min-h-screen text-slate-800;
+    background-color: var(--ds-surface-page);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    @apply outline-none ring-2 ring-orgmigra-blue-600/40 ring-offset-2;
+    --tw-ring-offset-color: var(--ds-surface-page);
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply border border-slate-200/90 bg-white shadow-soft;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .heatmap-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .heatmap-scroll::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.leaflet-container {
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  background: var(--ds-surface-page);
+}
+
+.territory-map-canvas .leaflet-container {
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.territory-map-tooltip {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1px solid rgba(15, 23, 42, 0.12) !important;
+  border-radius: 0.625rem !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+  color: #0f172a !important;
+  padding: 0 !important;
+  max-width: min(16rem, calc(100vw - 2rem));
+}
+
+.territory-map-tooltip::before {
+  border-top-color: rgba(255, 255, 255, 0.98) !important;
+}
+
+.territory-map-tooltip .territory-map-tooltip__body {
+  padding: 0.55rem 0.7rem;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.territory-map-tooltip .territory-map-tooltip__title {
+  font-weight: 650;
+  color: #0f172a;
+  margin-bottom: 0.1rem;
+}
+
+.territory-map-tooltip .territory-map-tooltip__meta {
+  font-size: 11px;
+  color: #64748b;
+  margin-bottom: 0.35rem;
+}
+
+.territory-map-tooltip .territory-map-tooltip__row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: #475569;
+}
+
+.territory-map-tooltip .territory-map-tooltip__row + .territory-map-tooltip__row {
+  margin-top: 0.15rem;
+}
+
+.territory-map-tooltip .territory-map-tooltip__saldo {
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.territory-map-tooltip .territory-map-tooltip__empty {
+  margin-top: 0.25rem;
+  font-size: 11px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.leaflet-tooltip.territory-map-tooltip--ict {
+  min-width: 280px;
+  max-width: min(420px, calc(100vw - 48px));
+  width: max-content;
+  white-space: pre-line;
+  word-break: normal;
+  overflow-wrap: normal;
+  line-height: 1.4;
+}
+
+.leaflet-tooltip.territory-map-tooltip--ict .territory-map-tooltip__body {
+  padding: 0.65rem 0.85rem;
+  font-size: 11.5px;
+  white-space: pre-line;
+  word-break: normal;
+  overflow-wrap: normal;
+  line-height: 1.4;
+}
+
+.territory-background-layer {
+  position: fixed;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Área principal com sidebar (lg+) — não cobrir aside */
+@media (min-width: 1024px) {
+  .territory-background-layer {
+    left: calc(
+      var(--ds-shell-margin-left) + var(--ds-sidebar-width) + var(--ds-sidebar-gap)
+    );
+  }
+}
+
+.territory-background-stage {
+  position: relative;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: flex-start;
+  justify-content: flex-end;
+  overflow: hidden;
+}
+
+.territory-background-map-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  overflow: hidden;
+  pointer-events: none;
+  /* Sem transition: evita piscada (opacity 1 → valor final ao montar). */
+  opacity: var(--territory-bg-opacity, 0);
+}
+
+/* Tablet — mapa um pouco mais discreto */
+@media (min-width: 640px) and (max-width: 1023px) {
+  .territory-background-map-layer {
+    opacity: calc(var(--territory-bg-opacity, 0) * 0.76);
+  }
+}
+
+/* Desktop — presença reforçada no estado final (sem transition) */
+@media (min-width: 1024px) {
+  .territory-background-map-layer {
+    opacity: calc(var(--territory-bg-opacity, 0) * 1.06);
+  }
+}
+
+.territory-background-map {
+  flex-shrink: 0;
+  transform-origin: top right;
+}
+
+.territory-background-fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 55% 45% at 78% 18%, transparent 18%, rgba(244, 247, 250, 0.14) 54%, rgba(244, 247, 250, 0.5) 100%),
+    radial-gradient(ellipse 90% 80% at 50% 50%, transparent 44%, rgba(244, 247, 250, 0.26) 100%),
+    linear-gradient(180deg, rgba(244, 247, 250, 0.22) 0%, transparent 30%, transparent 70%, rgba(244, 247, 250, 0.32) 100%);
+}
+
+/* Mini-cards de país — bandeira premium full-bleed com leitura à esquerda */
+.country-mini-card {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: rgb(255 255 255);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 14px rgba(25, 78, 147, 0.07);
+  transition: transform 250ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.country-mini-card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.98),
+    0 4px 10px rgba(15, 23, 42, 0.06),
+    0 14px 32px rgba(25, 78, 147, 0.13);
+}
+
+/* Gradiente principal — área limpa à esquerda, transição suave à direita */
+.country-mini-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.99) 0%,
+    rgba(255, 255, 255, 0.98) 16%,
+    rgba(255, 255, 255, 0.94) 30%,
+    rgba(255, 255, 255, 0.76) 44%,
+    rgba(255, 255, 255, 0.4) 56%,
+    rgba(255, 255, 255, 0.14) 68%,
+    rgba(255, 255, 255, 0.03) 80%,
+    rgba(255, 255, 255, 0) 92%
+  );
+  transition: opacity 250ms ease;
+}
+
+.country-mini-card:hover::before {
+  opacity: 0.93;
+}
+
+/* Aurora institucional discreta na zona de transição texto ↔ bandeira */
+.country-mini-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 75% 115% at 58% 52%,
+      rgba(25, 78, 147, 0.07) 0%,
+      rgba(25, 78, 147, 0.02) 40%,
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 50% 85% at 82% 28%,
+      rgba(255, 255, 255, 0.32) 0%,
+      transparent 58%
+    );
+  opacity: 0.8;
+  transition: opacity 250ms ease;
+}
+
+.country-mini-card:hover::after {
+  opacity: 1;
+}
+
+.country-mini-card__content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  width: 58%;
+  max-width: 62%;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  background: transparent;
+}
+
+.country-mini-card__flag {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgb(241 245 249) 0%, rgb(248 250 252) 100%);
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.12) 34%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.88) 66%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.12) 34%,
+    rgba(0, 0, 0, 0.55) 50%,
+    rgba(0, 0, 0, 0.88) 66%,
+    rgba(0, 0, 0, 1) 100%
+  );
+}
+
+/* Véu translúcido sobre a bandeira — suaviza saturação sem apagar o emblema */
+.country-mini-card__flag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgb(255 255 255);
+  opacity: 0.31;
+  transition: opacity 250ms ease;
+}
+
+.country-mini-card:hover .country-mini-card__flag::after {
+  opacity: 0.19;
+}
+
+.country-mini-card__flag-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 86% center;
+  opacity: 0.94;
+  filter: saturate(0.87) blur(0.2px);
+  transform: scale(1.04);
+  transition:
+    opacity 250ms ease,
+    transform 280ms ease;
+}
+
+.country-mini-card:hover .country-mini-card__flag-image {
+  opacity: 1;
+  filter: saturate(0.98) blur(0);
+  transform: scale(1.06);
+}
+
+.country-mini-card__flag-fallback {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgb(226 232 240) 0%, rgb(241 245 249) 100%);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgb(100 116 139);
+}
+
+@media (max-width: 639px) {
+  .country-mini-card__content {
+    width: 66%;
+    max-width: 70%;
+  }
+
+  .country-mini-card__flag-image {
+    object-position: 92% center;
+  }
+}

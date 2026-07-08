@@ -1,0 +1,46 @@
+{
+  "generated_at": "2026-06-17T18:16:47.072632+00:00",
+  "crs": "EPSG:4326",
+  "simplify_tolerance": 0.0005,
+  "source_files": {
+    "ufs_shp": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geodata\\ufs\\BR_UF_2024.shp",
+    "mun_pr_shp": "C:\\Users\\gutsi\\Documents\\CC\\empresa\\ORGMIGRA\\ORGMIGRA\\Interiorizacao\\shapes\\PR_Municipios_2024.shp"
+  },
+  "detected_columns": {
+    "ufs": {
+      "uf_name_col": "NM_UF",
+      "uf_sigla_col": "SIGLA_UF",
+      "uf_code_col": "CD_UF"
+    },
+    "municipios_pr": {
+      "mun_name_col": "NM_MUN",
+      "mun_code_col": "CD_MUN",
+      "uf_name_col": "NM_UF",
+      "uf_sigla_col": "SIGLA_UF"
+    }
+  },
+  "outputs": {
+    "ufs.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\ufs.geojson",
+    "municipios_pr.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\municipios_pr.geojson",
+    "municipios_rmc.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\municipios_rmc.geojson"
+  },
+  "counts": {
+    "ufs_count": 27,
+    "municipios_pr_count": 399,
+    "municipios_rmc_count": 29,
+    "expected_rmc_count": 29
+  },
+  "rmc_missing_municipios_norm": [],
+  "file_sizes_bytes": {
+    "ufs.geojson": 4744451,
+    "municipios_pr.geojson": 3893670,
+    "municipios_rmc.geojson": 424172
+  },
+  "warnings": [],
+  "dashboard_copy_paths": [
+    "dashboard\\public\\geo\\ufs.geojson",
+    "dashboard\\public\\geo\\municipios_pr.geojson",
+    "dashboard\\public\\geo\\municipios_rmc.geojson",
+    "dashboard\\public\\geo\\geo_assets.metadata.json"
+  ]
+}

@@ -1,0 +1,105 @@
+[webserver]
+port = ":8080"
+
+[[providers]]
+name = "plataforma_postgis"
+type = "postgis"
+uri = "postgres://postgres:postgres@postgres:5432/plataforma?sslmode=disable"
+srid = 4326
+
+  # Geometria + identificadores estáveis (sem métricas temporais).
+  [[providers.layers]]
+  name = "municipios_pr"
+  geometry_fieldname = "geom"
+  geometry_type = "MultiPolygon"
+  id_fieldname = "id"
+  sql = """
+    SELECT
+      CAST(cod_municipio AS INTEGER) AS id,
+      cod_municipio,
+      nome_municipio AS municipio,
+      nome_municipio_norm AS municipio_norm,
+      uf,
+      ST_AsBinary(geom) AS geom
+    FROM geo.municipios
+    WHERE uf = 'PR'
+      AND geom && !BBOX!
+  """
+
+  [[providers.layers]]
+  name = "municipios_rmc"
+  geometry_fieldname = "geom"
+  geometry_type = "MultiPolygon"
+  id_fieldname = "id"
+  sql = """
+    SELECT
+      CAST(m.cod_municipio AS INTEGER) AS id,
+      m.cod_municipio,
+      m.nome_municipio AS municipio,
+      COALESCE(r.nome_municipio_norm, m.nome_municipio_norm) AS municipio_norm,
+      m.uf,
+      ST_AsBinary(m.geom) AS geom
+    FROM geo.municipios_rmc r
+    INNER JOIN geo.municipios m ON m.cod_municipio = r.cod_municipio
+    WHERE m.geom && !BBOX!
+  """
+
+  [[providers.layers]]
+  name = "ufs_brasil"
+  geometry_fieldname = "geom"
+  geometry_type = "MultiPolygon"
+  id_fieldname = "id"
+  sql = """
+    SELECT
+      CAST(cod_uf AS INTEGER) AS id,
+      uf,
+      nome_uf,
+      nome_uf_norm AS uf_norm,
+      cod_uf,
+      ST_AsBinary(geom) AS geom
+    FROM geo.ufs
+    WHERE geom && !BBOX!
+  """
+
+  # Mesma geometria/identificadores de municípios PR; métricas ICTT ficam na API.
+  [[providers.layers]]
+  name = "ictt_municipios_pr"
+  geometry_fieldname = "geom"
+  geometry_type = "MultiPolygon"
+  id_fieldname = "id"
+  sql = """
+    SELECT
+      CAST(cod_municipio AS INTEGER) AS id,
+      cod_municipio,
+      nome_municipio AS municipio,
+      nome_municipio_norm AS municipio_norm,
+      uf,
+      ST_AsBinary(geom) AS geom
+    FROM geo.municipios
+    WHERE uf = 'PR'
+      AND geom && !BBOX!
+  """
+
+[[maps]]
+name = "municipios_pr"
+
+  [[maps.layers]]
+  provider_layer = "plataforma_postgis.municipios_pr"
+
+[[maps]]
+name = "municipios_rmc"
+
+  [[maps.layers]]
+  provider_layer = "plataforma_postgis.municipios_rmc"
+
+[[maps]]
+name = "ufs_brasil"
+
+  [[maps.layers]]
+  provider_layer = "plataforma_postgis.ufs_brasil"
+
+[[maps]]
+name = "ictt_municipios_pr"
+
+  [[maps.layers]]
+  provider_layer = "plataforma_postgis.ictt_municipios_pr"

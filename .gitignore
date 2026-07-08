@@ -1,0 +1,54 @@
+# --- Secrets / env ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Data lake (bronze, silver, gold, catalog, microdados) ---
+data-lake/**
+!data-lake/geo/
+data-lake/geo/**
+!data-lake/geo/README.md
+!data-lake/geo/processed/
+!data-lake/geo/processed/**
+data-lake/geo/raw/**
+
+# CAGED microdata (defense in depth; primary block is data-lake/**)
+**/microdados.txt
+
+# Pipeline backups and local artifacts
+*.bak_*
+*~
+
+# Generated datasets (outside demo paths)
+*.parquet
+
+# Database dumps / large exports
+*.dump
+*.sql.gz
+dumps/
+
+# Large temporaries
+*.tmp
+*.temp
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Node / dashboard build ---
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+
+# --- OS ---
+.DS_Store
+Thumbs.db

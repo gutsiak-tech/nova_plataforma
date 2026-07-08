@@ -1,0 +1,11 @@
+-- LEGADO (NÃO USAR EM PRODUÇÃO)
+-- ---------------------------------------------------------------------------
+-- O padrão antigo previa materialized view global (mv_saldo_municipio) sem filtro
+-- por requisição, o que exigiria REFRESH MATERIALIZED VIEW a cada troca de
+-- competência — inadequado para multiusuário.
+--
+-- O dashboard e a API usam serving.vw_emprego_municipio_mes com filtros
+-- WHERE ano = :ano AND mes = :mes AND uf = :uf por request.
+--
+-- Para bases existentes que ainda tenham a MV legada, execute:
+--   sql/migrations/001_drop_legacy_map_global_state.sql
