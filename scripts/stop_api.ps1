@@ -91,17 +91,22 @@ function Get-ApiListenerTargets {
                 $targets[$processId] = [pscustomobject]@{
                     ProcessId   = $processId
                     Name        = $process.Name
-                    Ports       = @($port)
+                    Ports       = @([int]$port)
                     CommandLine = $commandLine
                 }
             }
-            elseif ($port -notin $targets[$processId].Ports) {
-                $targets[$processId].Ports += $port
+            elseif ($port -notin @($targets[$processId].Ports)) {
+                $targets[$processId].Ports = @($targets[$processId].Ports) + [int]$port
             }
         }
     }
 
-    return @($targets.Values | Sort-Object ProcessId)
+    $sorted = @(
+        foreach ($item in $targets.Values | Sort-Object ProcessId) {
+            $item
+        }
+    )
+    return $sorted
 }
 
 Write-Host ""
@@ -110,9 +115,9 @@ Write-Host ""
 Write-Host "Portas alvo: $($Ports -join ', ')"
 Write-Host ""
 
-$targets = Get-ApiListenerTargets -TargetPorts $Ports
+$targets = @(Get-ApiListenerTargets -TargetPorts $Ports)
 
-if ($targets.Count -eq 0) {
+if (@($targets).Count -eq 0) {
     Write-Host "Nenhum processo uvicorn (app.main:app) encontrado nas portas informadas." -ForegroundColor Green
     Write-Host ""
     exit 0
@@ -120,7 +125,7 @@ if ($targets.Count -eq 0) {
 
 Write-Host "Processos candidatos a encerramento:" -ForegroundColor Cyan
 foreach ($target in $targets) {
-    $portList = ($target.Ports | Sort-Object -Unique) -join ', '
+    $portList = (@($target.Ports) | Sort-Object -Unique) -join ', '
     Write-Host ""
     Write-Host "  PID $($target.ProcessId) | portas: $portList | $($target.Name)"
     Write-Host "  $($target.CommandLine)"
@@ -156,6 +161,6 @@ foreach ($target in $targets) {
 }
 
 Write-Host ""
-Write-Host "Total encerrado: $stopped de $($targets.Count)" -ForegroundColor Green
+Write-Host "Total encerrado: $stopped de $(@($targets).Count)" -ForegroundColor Green
 Write-Host "Dica: confira com 'Get-NetTCPConnection -LocalPort 8000 -State Listen' se a porta ficou livre."
 Write-Host ""

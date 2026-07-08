@@ -4,9 +4,9 @@ Painel analítico para explorar dados do **Novo CAGED** (movimentação de empre
 
 Documentação complementar:
 
-- [`docs/arquitetura_atual.md`](docs/arquitetura_atual.md) — baseline congelado do MVP filesystem-first (antes da migração PostGIS/Tegola)
+- [`docs/arquitetura_atual.md`](docs/arquitetura_atual.md) — **snapshot histórico** do MVP filesystem-first (antes da migração PostGIS/Tegola)
 - [`docs/chave_territorial_cod_municipio.md`](docs/chave_territorial_cod_municipio.md) — chave IBGE / join territorial e enriquecimento seguro `cod_municipio`
-- [`docs/postgis_loaders_cod_municipio.md`](docs/postgis_loaders_cod_municipio.md) — carga idempotente Gold → PostGIS (ainda sem ligar API)
+- [`docs/postgis_loaders_cod_municipio.md`](docs/postgis_loaders_cod_municipio.md) — carga idempotente Gold → PostGIS (fase de loaders; API com `GOLD_BACKEND=postgis` documentada em `gold_backend_postgis_fallback.md`)
 - [`docs/postgis_backfill_competencias.md`](docs/postgis_backfill_competencias.md) — backfill PostGIS das competências 2026-01..04
 - [`docs/decisao_mapa_geojson_oficial.md`](docs/decisao_mapa_geojson_oficial.md) — **GeoJSON é o caminho oficial dos mapas** (Tegola desabilitado no frontend)
 - [`docs/gold_backend_postgis_fallback.md`](docs/gold_backend_postgis_fallback.md) — `GOLD_BACKEND` + `/api/ops/fallbacks` + `STRICT_NO_FALLBACK` no smoke
@@ -28,7 +28,7 @@ Documentação complementar:
 
 ## Operação local
 
-Fluxo recomendado para subir, validar e encerrar a API local. Use `stop_api.ps1` antes de trocar `GOLD_BACKEND` para evitar conflito de porta.
+Fluxo **oficial** para subir, validar e encerrar a API local. Use `stop_api.ps1` antes de trocar `GOLD_BACKEND` para evitar conflito de porta na 8000.
 
 **Subir filesystem**
 
@@ -108,26 +108,9 @@ python scripts/backfill_postgis_facts.py --ano 2026 --meses 1 2 3 4 --dry-run --
 python scripts/backfill_postgis_facts.py --ano 2026 --meses 1 2 3 4 --validate
 ```
 
-Backend Gold (`.env` + `start_stack.ps1`; default filesystem):
-
-```powershell
-# Modo seguro (default no .env)
-.\scripts\start_stack.ps1 -GoldBackend filesystem
-python scripts/smoke_platform.py --expect-gold-backend filesystem --skip-front
-
-# Modo PostGIS (API deve subir com GOLD_BACKEND no processo uvicorn)
-.\scripts\start_stack.ps1 -GoldBackend postgis
-python scripts/smoke_platform.py --expect-gold-backend postgis --skip-front
-
-# Modo estrito (sem fallback real durante o smoke)
-$env:STRICT_NO_FALLBACK="true"
-python scripts/smoke_platform.py --expect-gold-backend postgis --skip-front
-# Contador: GET /api/ops/fallbacks
-```
-
-Não adianta setar `$env:GOLD_BACKEND` só no terminal do smoke — use `start_stack.ps1 -GoldBackend` ou defina no `.env` antes de iniciar a API.
-
 Mapas: **GeoJSON oficial** — ver [`docs/decisao_mapa_geojson_oficial.md`](docs/decisao_mapa_geojson_oficial.md). Tegola permanece apenas como experimento de infra (`scripts/smoke_tegola.py`).
+
+Backend Gold: default seguro `filesystem`; PostGIS analítico via `GOLD_BACKEND=postgis`. Detalhes em [`docs/gold_backend_postgis_fallback.md`](docs/gold_backend_postgis_fallback.md).
 
 ---
 
@@ -237,21 +220,32 @@ Detalhes de portas, proxy, CORS, limites de API e Tailwind: [`docs/CONFIG.md`](d
 
 ## 6. Como rodar a API e o dashboard (demonstração)
 
-Para subir API e dashboard em janelas separadas (Windows):
+Fluxo recomendado (Windows) — ver também a seção **Operação local** no topo:
 
 ```powershell
-.\scripts\start_stack.ps1
+.\scripts\stop_api.ps1 -Force
+.\scripts\start_stack.ps1 -GoldBackend filesystem
+# ou: .\scripts\start_stack.ps1 -GoldBackend postgis
+```
+
+Para subir API **e** dashboard em janelas separadas:
+
+```powershell
+.\scripts\start_stack.ps1 -GoldBackend filesystem
 ```
 
 Consulte [`docs/handoff_institucional.md`](docs/handoff_institucional.md) para primeira execução e encerramento dos processos.
 
-### API manualmente
+### API manualmente (somente debug avançado)
 
-Com o ambiente virtual ativo:
+Preferir `start_stack.ps1 -GoldBackend filesystem|postgis`. Uvicorn manual só para depuração pontual — **`GOLD_BACKEND` precisa estar no mesmo processo**:
 
 ```powershell
+$env:GOLD_BACKEND='filesystem'   # ou postgis
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+Não adianta setar `$env:GOLD_BACKEND` apenas no terminal do smoke; use `start_stack.ps1` ou exporte a variável antes de iniciar o uvicorn.
 
 ### Endpoints úteis
 

@@ -1,7 +1,9 @@
 # Loaders PostGIS com `cod_municipio`
 
-Documento da etapa de carga PostGIS a partir da Gold enriquecida.  
-**Não** liga PostGIS como fonte principal da API Gold. Frontend, mapas e Tegola permanecem no MVP filesystem/GeoJSON.
+Documento da **fase de loaders** — carga PostGIS a partir da Gold enriquecida.
+
+> **Nota histórica:** quando este documento foi escrito, a API Gold ainda não lia PostGIS como backend. **Hoje**, com `GOLD_BACKEND=postgis` (via `.env` ou `scripts/start_stack.ps1 -GoldBackend postgis`), a API já lê os endpoints migrados diretamente do PostGIS, com fallback Gold filesystem. Ver [`gold_backend_postgis_fallback.md`](gold_backend_postgis_fallback.md).  
+> Os loaders abaixo continuam válidos para popular o banco; mapas no frontend seguem **GeoJSON** (Tegola não integrado ao dashboard).
 
 ---
 

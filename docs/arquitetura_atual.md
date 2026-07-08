@@ -1,5 +1,7 @@
 # Arquitetura atual — baseline congelado (MVP)
 
+> **Snapshot histórico** do baseline filesystem-first. O estado atual estabilizado está documentado em [`decisao_mapa_geojson_oficial.md`](decisao_mapa_geojson_oficial.md) e [`gold_backend_postgis_fallback.md`](gold_backend_postgis_fallback.md).
+
 Documento de congelamento do estado operacional **antes** da migração territorial PostGIS/Tegola.  
 Não descreve o estado futuro desejado; registra apenas o que está ativo hoje.
 
