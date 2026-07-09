@@ -30,14 +30,32 @@ def is_strict_no_fallback(raw: str | None = None) -> bool:
     return value in TRUE_VALUES
 
 
+def resolve_admin_bearer_token(cli_value: str | None = None) -> str | None:
+    """Token admin para /api/ops/fallbacks: CLI tem prioridade sobre env."""
+    if cli_value is not None and str(cli_value).strip():
+        return str(cli_value).strip()
+    env = os.getenv("ADMIN_BEARER_TOKEN", "").strip()
+    return env or None
+
+
+def _ops_auth_headers(admin_bearer_token: str | None) -> dict[str, str]:
+    if not admin_bearer_token:
+        return {}
+    return {"Authorization": f"Bearer {admin_bearer_token}"}
+
+
 def _request(
     method: str,
     url: str,
     *,
     timeout: float = 30.0,
+    extra_headers: dict[str, str] | None = None,
 ) -> tuple[int | None, Any | None, str | None, dict[str, str]]:
     """Retorna (status, body_json_ou_None, erro_ou_None, headers_lower)."""
     req = urllib.request.Request(url, method=method)
+    if extra_headers:
+        for key, value in extra_headers.items():
+            req.add_header(key, value)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             status = getattr(resp, "status", None) or resp.getcode()
@@ -67,9 +85,17 @@ def _request(
         return None, None, str(exc), {}
 
 
-def fetch_ops_fallbacks_total(api_base: str) -> tuple[int | None, str | None]:
+def fetch_ops_fallbacks_total(
+    api_base: str,
+    *,
+    admin_bearer_token: str | None = None,
+) -> tuple[int | None, str | None]:
     """Retorna (total_fallbacks, erro). total=None se indisponível."""
-    status, body, err, _headers = _request("GET", f"{api_base.rstrip('/')}/api/ops/fallbacks")
+    status, body, err, _headers = _request(
+        "GET",
+        f"{api_base.rstrip('/')}/api/ops/fallbacks",
+        extra_headers=_ops_auth_headers(admin_bearer_token) or None,
+    )
     if status is None:
         return None, err or "indisponível"
     if status >= 400 or not isinstance(body, dict):
@@ -94,12 +120,14 @@ class SmokeRunner:
         *,
         strict_no_fallback: bool = False,
         expect_gold_backend: str | None = None,
+        admin_bearer_token: str | None = None,
     ) -> None:
         self.ok = 0
         self.warn = 0
         self.fail = 0
         self.strict_no_fallback = strict_no_fallback
         self.expect_gold_backend = expect_gold_backend
+        self.admin_bearer_token = admin_bearer_token
         self.initial_fallbacks: int | None = None
         self.strict_violations: list[str] = []
         self.backend_violations: list[str] = []
@@ -206,9 +234,22 @@ class SmokeRunner:
         self._record("OK", name, f"HTTP {status}")
 
     def check_ops_fallbacks(self, url: str) -> int | None:
-        status, body, err, _headers = _request("GET", url)
+        status, body, err, _headers = _request(
+            "GET",
+            url,
+            extra_headers=_ops_auth_headers(self.admin_bearer_token) or None,
+        )
         if status is None:
             self._record("FAIL", "ops/fallbacks", f"API indisponível: {err} ({url})")
+            return None
+        if status in (401, 403, 404) and not self.admin_bearer_token:
+            self._record(
+                "WARN",
+                "ops/fallbacks",
+                f"HTTP {status} — endpoint protegido em produção; "
+                "forneça --admin-bearer-token ou ADMIN_BEARER_TOKEN "
+                "(não é falha PostGIS)",
+            )
             return None
         if status >= 400:
             self._record("FAIL", "ops/fallbacks", f"HTTP {status} ({url})")
@@ -248,6 +289,11 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Falha se X-Gold-Backend diferir do backend esperado nos endpoints Gold/ICT migrados.",
     )
+    p.add_argument(
+        "--admin-bearer-token",
+        default=None,
+        help="Bearer para GET /api/ops/fallbacks em produção. Padrão: ADMIN_BEARER_TOKEN.",
+    )
     return p
 
 
@@ -260,21 +306,24 @@ def main(argv: list[str] | None = None) -> int:
     q = urlencode({"ano": ano, "mes": mes})
     strict = is_strict_no_fallback()
     expect_backend = args.expect_gold_backend
+    admin_token = resolve_admin_bearer_token(args.admin_bearer_token)
 
     runner = SmokeRunner(
         strict_no_fallback=strict,
         expect_gold_backend=expect_backend,
+        admin_bearer_token=admin_token,
     )
     print(
         f"Smoke platform | api={api} | competencia={ano}-{mes:02d} | "
         f"STRICT_NO_FALLBACK={'true' if strict else 'false'} | "
-        f"EXPECT_GOLD_BACKEND={expect_backend or '(nao verificado)'}"
+        f"EXPECT_GOLD_BACKEND={expect_backend or '(nao verificado)'} | "
+        f"ADMIN_BEARER={'configurado' if admin_token else 'nao configurado'}"
     )
     print("")
 
     # Baseline do contador (fallback histórico não conta; só aumento durante o smoke).
     if strict:
-        initial, err = fetch_ops_fallbacks_total(api)
+        initial, err = fetch_ops_fallbacks_total(api, admin_bearer_token=admin_token)
         if initial is None:
             runner._record(
                 "FAIL",
