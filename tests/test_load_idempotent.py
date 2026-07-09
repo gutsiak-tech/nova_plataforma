@@ -4,23 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pipelines.gold.load_fact_tables import UPSERT_FACT_SQL
-from pipelines.gold.load_geo_tables import UPSERT_GEO_SQL
+from pipelines.gold.load_fact_tables import INSERT_MUNICIPIO_SQL
+from pipelines.gold.load_geo_tables import UPSERT_MUNICIPIO_SQL
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def test_fact_loader_uses_upsert_on_conflict() -> None:
-    assert "ON CONFLICT (ano, mes, uf, municipio) DO UPDATE" in UPSERT_FACT_SQL
+    assert "ON CONFLICT (ano, mes, uf, municipio) DO UPDATE" in INSERT_MUNICIPIO_SQL
 
 
 def test_geo_loader_uses_upsert_on_conflict() -> None:
-    assert "ON CONFLICT (cod_municipio) DO UPDATE" in UPSERT_GEO_SQL
+    assert "ON CONFLICT (cod_municipio) DO UPDATE" in UPSERT_MUNICIPIO_SQL
 
 
 def test_fact_loader_sql_does_not_use_blind_insert_only() -> None:
-    assert UPSERT_FACT_SQL.strip().upper().startswith("INSERT")
-    assert "DO UPDATE" in UPSERT_FACT_SQL
+    assert INSERT_MUNICIPIO_SQL.strip().upper().startswith("INSERT")
+    assert "DO UPDATE" in INSERT_MUNICIPIO_SQL
 
 
 def test_schema_defines_fact_primary_key() -> None:

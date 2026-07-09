@@ -169,6 +169,9 @@ def test_read_gold_table_raises_when_neither_format_exists(monkeypatch, tmp_path
     month = GoldMonthRef(ano=2026, mes=2)
 
     with pytest.raises(FileNotFoundError, match="Tabela Gold não encontrada"):
+        read_gold_table(month, "tabela_municipio", "br")
+
+    with pytest.raises(ValueError, match="inválido"):
         read_gold_table(month, "tabela_inexistente", "br")
 
 
@@ -303,7 +306,7 @@ def test_table_not_found_returns_gold_table_not_found(monkeypatch, tmp_path):
     monkeypatch.setattr("app.services.gold_service.GOLD_CAGED_DIR", gold_root)
 
     response = client.get(
-        "/api/gold/v1/table/tabela_inexistente?scope=br&ano=2026&mes=2"
+        "/api/gold/v1/table/tabela_municipio?scope=br&ano=2026&mes=2"
     )
     assert response.status_code == 404
     body = response.json()
@@ -322,7 +325,7 @@ def test_overview_pr_does_not_read_tabela_resumo_with_scope_pr(monkeypatch, tmp_
         calls.append((base_name, scope))
         return real_read(month, base_name=base_name, scope=scope)
 
-    monkeypatch.setattr("app.api.routes_gold.read_gold_table", tracking_read)
+    monkeypatch.setattr("app.repositories.gold_filesystem_repository.read_gold_table", tracking_read)
 
     response = client.get("/api/gold/v1/overview?scope=pr&ano=2026&mes=2")
     assert response.status_code == 200
@@ -343,7 +346,7 @@ def test_overview_rmc_does_not_read_tabela_resumo_with_scope_rmc(monkeypatch, tm
         calls.append((base_name, scope))
         return real_read(month, base_name=base_name, scope=scope)
 
-    monkeypatch.setattr("app.api.routes_gold.read_gold_table", tracking_read)
+    monkeypatch.setattr("app.repositories.gold_filesystem_repository.read_gold_table", tracking_read)
 
     response = client.get("/api/gold/v1/overview?scope=rmc&ano=2026&mes=2")
     assert response.status_code == 200

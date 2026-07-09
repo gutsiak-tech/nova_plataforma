@@ -245,10 +245,25 @@ def test_table_missing_table_returns_structured_error(monkeypatch, tmp_path):
 
     response = client.get("/api/gold/v1/table/tabela_inexistente?scope=br&ano=2026&mes=2")
 
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["code"] == "INVALID_TABLE"
+    assert body["error"]["details"]["table"] == "tabela_inexistente"
+
+
+def test_table_missing_file_returns_not_found(monkeypatch, tmp_path):
+    gold_root = tmp_path / "gold" / "caged"
+    month_dir = gold_root / "ano=2026" / "mes=02"
+    month_dir.mkdir(parents=True)
+    (month_dir / "tabela_resumo.csv").write_text("a\n", encoding="utf-8")
+    monkeypatch.setattr("app.services.gold_service.GOLD_CAGED_DIR", gold_root)
+
+    response = client.get("/api/gold/v1/table/tabela_municipio?scope=br&ano=2026&mes=2")
+
     assert response.status_code == 404
     body = response.json()
     assert body["error"]["code"] == "GOLD_TABLE_NOT_FOUND"
-    assert body["error"]["details"]["table"] == "tabela_inexistente"
+    assert body["error"]["details"]["table"] == "tabela_municipio"
 
 
 def test_overview_missing_competencia_returns_structured_error(monkeypatch, tmp_path):

@@ -71,6 +71,19 @@ Não adianta setar `$env:GOLD_BACKEND` só no terminal do smoke — use `start_s
 
 Checklist completo pré-Git: [`docs/pre_git_checklist.md`](docs/pre_git_checklist.md).
 
+## Publicação em produção
+
+Hardening mínimo para domínio público (sem alterar contratos JSON, GeoJSON ou lógica Gold/ICT):
+
+1. **Build estático do dashboard** — `cd dashboard && npm run build`; servir `dashboard/dist` via Nginx ou Caddy no mesmo domínio do site.
+2. **Proxy da API** — encaminhar `/api` para o FastAPI em `http://127.0.0.1:8000` (exemplo: [`deploy/nginx.example.conf`](deploy/nginx.example.conf)).
+3. **Variáveis** — `APP_ENV=production`, `GOLD_BACKEND=postgis`, `CORS_ALLOWED_ORIGINS` com o domínio real, `ADMIN_BEARER_TOKEN` longo e aleatório, `ENABLE_DEBUG_ROUTES=false`. Ver [`.env.example`](.env.example).
+4. **Postgres** — não expor na internet; usar usuário read-only (`sql/create_readonly_user.example.sql`).
+5. **Documentação da API** — com `APP_ENV=production`, `/docs`, `/redoc` e `/openapi.json` retornam 404.
+6. **Operações** — `GET /api/ops/fallbacks` exige `Authorization: Bearer <ADMIN_BEARER_TOKEN>` em produção.
+7. **CSP** — não configurada na API (pode quebrar Leaflet); aplicar no proxy após validar o front em produção.
+8. **Smoke pós-deploy** — `python scripts/smoke_platform.py --expect-gold-backend postgis` contra a URL pública (ou via túnel SSH na 8000).
+
 ---
 
 Smoke do baseline (API ativa; frontend opcional):

@@ -13,12 +13,14 @@ from fastapi.testclient import TestClient
 def _reload_app(monkeypatch: pytest.MonkeyPatch, **env: str) -> TestClient:
     for key, value in env.items():
         monkeypatch.setenv(key, value)
+    import app.api.routes_ops as ops_module
     import app.core.config as config_module
     import app.core.security as security_module
     import app.main as main_module
 
     importlib.reload(config_module)
     importlib.reload(security_module)
+    importlib.reload(ops_module)
     importlib.reload(main_module)
     return TestClient(main_module.app)
 
@@ -241,3 +243,70 @@ def test_format_readiness_problems_development_preserves_details() -> None:
     with patch("app.core.public_errors.is_production_env", return_value=False):
         messages = format_readiness_problems(coded)
     assert messages == [detail]
+
+
+def test_production_hides_openapi_docs(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = _reload_app(monkeypatch, APP_ENV="production", ADMIN_BEARER_TOKEN="prod-token")
+    assert client.get("/docs").status_code == 404
+    assert client.get("/redoc").status_code == 404
+    assert client.get("/openapi.json").status_code == 404
+
+
+def test_development_exposes_openapi_docs(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = _reload_app(monkeypatch, APP_ENV="local", ADMIN_BEARER_TOKEN="dev-token")
+    assert client.get("/docs").status_code == 200
+    assert client.get("/redoc").status_code == 200
+    openapi = client.get("/openapi.json")
+    assert openapi.status_code == 200
+    assert "openapi" in openapi.json()
+
+
+def test_security_headers_on_health(client: TestClient) -> None:
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.headers.get("x-content-type-options") == "nosniff"
+    assert response.headers.get("x-frame-options") == "SAMEORIGIN"
+    assert response.headers.get("referrer-policy") == "strict-origin-when-cross-origin"
+    assert response.headers.get("permissions-policy") == "geolocation=(), microphone=(), camera=()"
+
+
+def test_ops_fallbacks_public_in_development(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = _reload_app(monkeypatch, APP_ENV="local", ADMIN_BEARER_TOKEN="dev-token")
+    response = client.get("/api/ops/fallbacks")
+    assert response.status_code == 200
+
+
+def test_ops_fallbacks_blocked_in_production_without_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _reload_app(
+        monkeypatch,
+        APP_ENV="production",
+        ADMIN_BEARER_TOKEN="prod-token",
+    )
+    response = client.get("/api/ops/fallbacks")
+    assert response.status_code == 401
+
+
+def test_ops_fallbacks_allowed_in_production_with_token(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client = _reload_app(
+        monkeypatch,
+        APP_ENV="production",
+        ADMIN_BEARER_TOKEN="prod-token",
+    )
+    response = client.get(
+        "/api/ops/fallbacks",
+        headers={"Authorization": "Bearer prod-token"},
+    )
+    assert response.status_code == 200
+
+
+def test_ops_fallbacks_hidden_when_production_token_not_configured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("ADMIN_BEARER_TOKEN", raising=False)
+    client = _reload_app(monkeypatch, APP_ENV="production")
+    response = client.get("/api/ops/fallbacks")
+    assert response.status_code == 404

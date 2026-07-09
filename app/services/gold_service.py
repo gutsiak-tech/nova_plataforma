@@ -9,6 +9,7 @@ from typing import Any, Literal
 import pandas as pd
 
 from app.core.config import API_LOG_FILE, DEFAULT_ANO, DEFAULT_MES, GOLD_CAGED_DIR, PROJECT_ROOT
+from app.core.gold_table_validation import validate_gold_base_name
 from app.core.logging import setup_logger
 
 logger = setup_logger("api.gold", API_LOG_FILE)
@@ -98,7 +99,8 @@ def resolve_gold_table_paths(
     base_name: str,
     scope: Scope,
 ) -> GoldTablePaths:
-    stem = _table_stem(base_name, scope)
+    safe_base_name = validate_gold_base_name(base_name)
+    stem = _table_stem(safe_base_name, scope)
     return GoldTablePaths(
         table_name=stem,
         csv_path=month.dir / f"{stem}.csv",

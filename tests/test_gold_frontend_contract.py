@@ -27,6 +27,7 @@ GOLD_COLUMNS_TS = PROJECT_ROOT / "dashboard" / "src" / "api" / "goldColumns.ts"
 DATA_CONTRACT_MD = PROJECT_ROOT / "docs" / "DATA_CONTRACT.md"
 GOLD_SERVICE_PY = PROJECT_ROOT / "app" / "services" / "gold_service.py"
 ROUTES_GOLD_PY = PROJECT_ROOT / "app" / "api" / "routes_gold.py"
+GOLD_FS_REPO_PY = PROJECT_ROOT / "app" / "repositories" / "gold_filesystem_repository.py"
 GOLD_CONTRACT_PY = PROJECT_ROOT / "pipelines" / "gold" / "gold_contract.py"
 
 MOVEMENT_COLUMNS = frozenset({"admissoes", "desligamentos", "saldo"})
@@ -227,6 +228,11 @@ def routes_gold_text() -> str:
 
 
 @pytest.fixture(scope="module")
+def gold_fs_repo_text() -> str:
+    return _read(GOLD_FS_REPO_PY)
+
+
+@pytest.fixture(scope="module")
 def gold_contract_text() -> str:
     return _read(GOLD_CONTRACT_PY)
 
@@ -355,10 +361,10 @@ def test_overview_only_tables_documented(data_contract_text: str) -> None:
         )
 
 
-def test_overview_only_tables_used_in_routes_overview(routes_gold_text: str) -> None:
+def test_overview_only_tables_used_in_routes_overview(gold_fs_repo_text: str) -> None:
     for table in OVERVIEW_ONLY_TABLE_CONTRACT:
-        assert table in routes_gold_text, (
-            f"Tabela overview-only '{table}' não referenciada em routes_gold.py"
+        assert table in gold_fs_repo_text, (
+            f"Tabela overview-only '{table}' não referenciada em gold_filesystem_repository.py"
         )
 
 
@@ -467,12 +473,12 @@ def test_routes_gold_has_overview_and_table(routes_gold_text: str) -> None:
     assert "def table" in routes_gold_text
 
 
-def test_routes_gold_references_overview_table_families(routes_gold_text: str) -> None:
+def test_routes_gold_references_overview_table_families(gold_fs_repo_text: str) -> None:
     missing = OVERVIEW_ROUTE_TABLES - {
-        t for t in OVERVIEW_ROUTE_TABLES if t in routes_gold_text
+        t for t in OVERVIEW_ROUTE_TABLES if t in gold_fs_repo_text
     }
     assert not missing, (
-        f"Famílias de tabela do /overview ausentes em routes_gold.py: {sorted(missing)}"
+        f"Famílias de tabela do /overview ausentes em gold_filesystem_repository.py: {sorted(missing)}"
     )
 
 
@@ -506,7 +512,7 @@ def test_gold_contract_migrant_base_names() -> None:
 
 
 def test_gold_contract_pipeline_table_count() -> None:
-    assert CURRENT_PIPELINE_TABLE_COUNT == 56
+    assert CURRENT_PIPELINE_TABLE_COUNT == 59
     assert len(MIGRANT_MOVEMENT_GOLD_TABLES) == 9
 
 

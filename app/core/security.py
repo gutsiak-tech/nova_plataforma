@@ -38,3 +38,14 @@ def require_admin_bearer(
             detail="Invalid bearer token.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def require_ops_fallback_access(
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
+) -> None:
+    """Em produção exige Bearer admin; em dev/local permanece público."""
+    if not is_production_env():
+        return
+    if not ADMIN_BEARER_TOKEN:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not Found")
+    require_admin_bearer(credentials)

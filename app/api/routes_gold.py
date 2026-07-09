@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.errors import GoldAPIError, raise_gold_api_error
 from app.core.config import API_LOG_FILE
+from app.core.gold_table_validation import validate_gold_base_name
 from app.core.logging import setup_logger
 from app.repositories.gold_filesystem_repository import expected_table_path
 from app.repositories.gold_repository import get_overview, get_table
@@ -219,18 +220,28 @@ def table(
     month = _resolve_month(ano, mes)
     _ensure_competencia(month)
 
-    if is_br_only_table(base_name) and sc != "br":
+    try:
+        safe_base_name = validate_gold_base_name(base_name)
+    except ValueError as exc:
+        raise GoldAPIError(
+            "INVALID_TABLE",
+            "Tabela inválida.",
+            {"table": base_name},
+            status_code=400,
+        ) from exc
+
+    if is_br_only_table(safe_base_name) and sc != "br":
         raise GoldAPIError(
             "INVALID_SCOPE",
-            f"{base_name} está disponível apenas para scope=br (resumo nacional).",
-            {"table": base_name, "scope": sc, "allowed_scopes": ["br"]},
+            f"{safe_base_name} está disponível apenas para scope=br (resumo nacional).",
+            {"table": safe_base_name, "scope": sc, "allowed_scopes": ["br"]},
             status_code=400,
         )
 
     try:
         result = get_table(
             month,
-            base_name=base_name,
+            base_name=safe_base_name,
             scope=sc,
             limit=limit,
             offset=offset,
@@ -238,10 +249,10 @@ def table(
             sort_dir=sort_dir,
         )
     except FileNotFoundError as exc:
-        path = expected_table_path(month, base_name=base_name, scope=sc)
+        path = expected_table_path(month, base_name=safe_base_name, scope=sc)
         if not competencia_is_available(month):
             raise _competencia_error_from_month(month) from exc
-        raise _table_not_found_error(month, base_name, sc, path) from exc
+        raise _table_not_found_error(month, safe_base_name, sc, path) from exc
     except ValueError as exc:
         raise GoldAPIError(
             "INVALID_COMPETENCIA",
@@ -249,7 +260,7 @@ def table(
             {
                 "ano": month.ano,
                 "mes": month.mes,
-                "table": base_name,
+                "table": safe_base_name,
             },
             status_code=400,
         ) from exc
