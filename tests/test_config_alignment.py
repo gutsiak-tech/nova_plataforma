@@ -35,6 +35,7 @@ MAIN_PY = PROJECT_ROOT / "app" / "main.py"
 
 FRONTEND_CONTRACT_TEST = PROJECT_ROOT / "tests" / "test_gold_frontend_contract.py"
 CONFIG_ALIGNMENT_TEST = PROJECT_ROOT / "tests" / "test_config_alignment.py"
+START_STACK_PS1 = PROJECT_ROOT / "scripts" / "start_stack.ps1"
 
 TABLE_MAX_LIMIT = 2000
 
@@ -280,3 +281,18 @@ def test_config_alignment_test_file_exists() -> None:
 
 def test_frontend_contract_test_file_exists() -> None:
     assert FRONTEND_CONTRACT_TEST.is_file()
+
+
+def test_start_stack_injects_production_env_vars() -> None:
+    """start_stack.ps1 deve repassar APP_ENV e variáveis P0 ao processo uvicorn."""
+    text = _read(START_STACK_PS1)
+    assert "-AppEnv" in text
+    assert "Build-ApiEnvLauncher" in text
+    assert "APP_ENV" in text
+    assert "ADMIN_BEARER_TOKEN" in text
+    assert "ENABLE_ADMIN_ROUTES" in text
+    assert "RATE_LIMIT_ENABLED" in text
+    assert "RATE_LIMIT_PER_MINUTE" in text
+    assert "ADMIN_BEARER_TOKEN=$AdminTokenStatus" in text
+    assert "missing" in text
+    assert "APP_ENV=production exige ADMIN_BEARER_TOKEN" in text

@@ -82,7 +82,27 @@ Hardening mínimo para domínio público (sem alterar contratos JSON, GeoJSON ou
 5. **Documentação da API** — com `APP_ENV=production`, `/docs`, `/redoc` e `/openapi.json` retornam 404.
 6. **Operações** — `GET /api/ops/fallbacks` exige `Authorization: Bearer <ADMIN_BEARER_TOKEN>` em produção.
 7. **CSP** — não configurada na API (pode quebrar Leaflet); aplicar no proxy após validar o front em produção.
-8. **Smoke pós-deploy** — `python scripts/smoke_platform.py --expect-gold-backend postgis` contra a URL pública (ou via túnel SSH na 8000).
+8. **Smoke pós-deploy** — `python scripts/smoke_platform.py --expect-gold-backend postgis --admin-bearer-token <token>` contra a URL pública.
+
+## Checklist P0 antes de domínio público
+
+Obrigatórios antes de expor o dashboard em domínio:
+
+- [ ] `APP_ENV=production`
+- [ ] `GOLD_BACKEND=postgis`
+- [ ] `ADMIN_BEARER_TOKEN` forte (≥16 caracteres, não placeholder)
+- [ ] `ENABLE_ADMIN_ROUTES=false` (não expor `/api/admin/*` no site público)
+- [ ] `ENABLE_DEBUG_ROUTES=false`
+- [ ] `RATE_LIMIT_ENABLED=true`
+- [ ] Usuário PostgreSQL read-only (`caged_readonly`) — ver [`sql/create_readonly_user.example.sql`](sql/create_readonly_user.example.sql) nos schemas **geo** e **serving**
+- [ ] Porta **5432 privada** (nunca exposta na internet)
+- [ ] **HTTPS** ativo no proxy (ver [`deploy/nginx.example.conf`](deploy/nginx.example.conf))
+- [ ] Proxy `/api` → FastAPI no mesmo domínio
+- [ ] gzip + Cache-Control para `/assets/` e `/geo/`
+- [ ] Smoke: `python scripts/smoke_platform.py --expect-gold-backend postgis --admin-bearer-token <token>`
+- [ ] Ensaio local em production: `.\scripts\start_stack.ps1 -GoldBackend postgis -AppEnv production -AdminBearerToken <token> -EnableAdminRoutes false -RateLimitEnabled true -RateLimitPerMinute 120` (defina `POSTGRES_USER`/`POSTGRES_PASSWORD` não padrão no shell ou `.env` antes de subir)
+
+Não refatorar mapas/GeoJSON de véspera; não alterar contratos JSON Gold/ICT.
 
 ---
 

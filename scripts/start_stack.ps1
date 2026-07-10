@@ -20,6 +20,25 @@
     Backend Gold da API: filesystem | postgis.
     Se omitido, le GOLD_BACKEND do arquivo .env; se ausente, usa filesystem.
 
+.PARAMETER AppEnv
+    Ambiente logico da API (ex.: local, production). Herda $env:APP_ENV se omitido.
+
+.PARAMETER AdminBearerToken
+    Token admin para /api/ops/fallbacks e rotas admin em production.
+    Nunca e impresso pelo script. Herda $env:ADMIN_BEARER_TOKEN se omitido.
+
+.PARAMETER CorsAllowedOrigins
+    Origens CORS separadas por virgula. Herda $env:CORS_ALLOWED_ORIGINS se omitido.
+
+.PARAMETER EnableAdminRoutes
+    true | false. Em production o default e false.
+
+.PARAMETER RateLimitEnabled
+    true | false. Em production o default e true.
+
+.PARAMETER RateLimitPerMinute
+    Limite por IP/minuto nos prefixos /api/gold, /api/ict, /api/map, /api/ops.
+
 .PARAMETER SkipApi
     Nao inicia a API.
 
@@ -33,14 +52,19 @@
     .\scripts\start_stack.ps1 -GoldBackend postgis
 
 .EXAMPLE
-    .\scripts\start_stack.ps1 -ApiPort 8080 -DashboardPort 5174 -GoldBackend filesystem
+    .\scripts\start_stack.ps1 `
+      -GoldBackend postgis `
+      -AppEnv production `
+      -AdminBearerToken local-production-test-token `
+      -EnableAdminRoutes false `
+      -RateLimitEnabled true `
+      -RateLimitPerMinute 120
 
 .EXAMPLE
     .\scripts\start_stack.ps1 -SkipDashboard
 
 .NOTES
-    GOLD_BACKEND precisa estar no processo que inicia a API (esta janela/processo).
-    Nao adianta setar GOLD_BACKEND apenas no terminal do smoke.
+    Variaveis P0 sao injetadas explicitamente no processo uvicorn (nao dependem so de heranca).
     Para encerrar: feche cada janela PowerShell aberta ou pressione Ctrl+C nelas.
     O dashboard usa proxy /api -> API local (ver dashboard/vite.config.ts).
 #>
@@ -51,6 +75,14 @@ param(
     [int]$DashboardPort = 0,
     [ValidateSet("filesystem", "postgis")]
     [string]$GoldBackend = "",
+    [string]$AppEnv = "",
+    [string]$AdminBearerToken = "",
+    [string]$CorsAllowedOrigins = "",
+    [ValidateSet("true", "false", "")]
+    [string]$EnableAdminRoutes = "",
+    [ValidateSet("true", "false", "")]
+    [string]$RateLimitEnabled = "",
+    [int]$RateLimitPerMinute = 0,
     [switch]$SkipApi,
     [switch]$SkipDashboard
 )
@@ -69,6 +101,11 @@ $EnvFilePath = Join-Path $ProjectRoot ".env"
 function Write-DependencyWarning {
     param([string]$Message)
     Write-Warning $Message
+}
+
+function Escape-PSSingleQuoted {
+    param([string]$Value)
+    return ($Value -replace "'", "''")
 }
 
 function Get-GoldBackendFromEnvFile {
@@ -103,7 +140,156 @@ function Resolve-StackGoldBackend {
     return "filesystem"
 }
 
+function Resolve-StackSetting {
+    param(
+        [string]$ParamValue,
+        [string]$EnvName,
+        [string]$Default = ""
+    )
+    if ($ParamValue -and $ParamValue.Trim()) {
+        return $ParamValue.Trim()
+    }
+    $fromEnv = [Environment]::GetEnvironmentVariable($EnvName)
+    if ($fromEnv -and $fromEnv.Trim()) {
+        return $fromEnv.Trim()
+    }
+    return $Default
+}
+
+function Resolve-StackAppEnv {
+    param([string]$Explicit)
+    $value = Resolve-StackSetting -ParamValue $Explicit -EnvName "APP_ENV" -Default "local"
+    return $value.ToLower()
+}
+
+function Resolve-StackEnableAdminRoutes {
+    param(
+        [string]$Explicit,
+        [string]$EffectiveAppEnv
+    )
+    if ($Explicit -in @("true", "false")) {
+        return $Explicit
+    }
+    $fromEnv = Resolve-StackSetting -ParamValue "" -EnvName "ENABLE_ADMIN_ROUTES"
+    if ($fromEnv -in @("true", "false", "1", "0", "yes", "no", "on", "off")) {
+        return if ($fromEnv -in @("true", "1", "yes", "on")) { "true" } else { "false" }
+    }
+    if ($EffectiveAppEnv -in @("production", "prod")) {
+        return "false"
+    }
+    return "true"
+}
+
+function Resolve-StackRateLimitEnabled {
+    param(
+        [string]$Explicit,
+        [string]$EffectiveAppEnv
+    )
+    if ($Explicit -in @("true", "false")) {
+        return $Explicit
+    }
+    $fromEnv = Resolve-StackSetting -ParamValue "" -EnvName "RATE_LIMIT_ENABLED"
+    if ($fromEnv -in @("true", "false", "1", "0", "yes", "no", "on", "off")) {
+        return if ($fromEnv -in @("true", "1", "yes", "on")) { "true" } else { "false" }
+    }
+    if ($EffectiveAppEnv -in @("production", "prod")) {
+        return "true"
+    }
+    return "false"
+}
+
+function Resolve-StackRateLimitPerMinute {
+    param(
+        [int]$Explicit,
+        [string]$EffectiveAppEnv
+    )
+    if ($Explicit -gt 0) {
+        return $Explicit
+    }
+    $fromEnv = Resolve-StackSetting -ParamValue "" -EnvName "RATE_LIMIT_PER_MINUTE"
+    if ($fromEnv -match '^\d+$' -and [int]$fromEnv -gt 0) {
+        return [int]$fromEnv
+    }
+    if ($EffectiveAppEnv -in @("production", "prod")) {
+        return 60
+    }
+    return 60
+}
+
+function Build-ApiEnvAssignment {
+    param(
+        [string]$Name,
+        [string]$Value
+    )
+    if (-not $Value) {
+        return $null
+    }
+    return "`$env:$Name='$((Escape-PSSingleQuoted -Value $Value))'"
+}
+
+function Build-ApiEnvLauncher {
+    param(
+        [string]$EffectiveGoldBackend,
+        [string]$EffectiveAppEnv,
+        [string]$EffectiveAdminToken,
+        [string]$EffectiveCorsOrigins,
+        [string]$EffectiveEnableAdminRoutes,
+        [string]$EffectiveRateLimitEnabled,
+        [int]$EffectiveRateLimitPerMinute
+    )
+
+    $assignments = @(
+        (Build-ApiEnvAssignment -Name "GOLD_BACKEND" -Value $EffectiveGoldBackend)
+        (Build-ApiEnvAssignment -Name "APP_ENV" -Value $EffectiveAppEnv)
+        (Build-ApiEnvAssignment -Name "ENABLE_ADMIN_ROUTES" -Value $EffectiveEnableAdminRoutes)
+        (Build-ApiEnvAssignment -Name "RATE_LIMIT_ENABLED" -Value $EffectiveRateLimitEnabled)
+        (Build-ApiEnvAssignment -Name "RATE_LIMIT_PER_MINUTE" -Value ([string]$EffectiveRateLimitPerMinute))
+    )
+
+    if ($EffectiveAdminToken) {
+        $assignments += (Build-ApiEnvAssignment -Name "ADMIN_BEARER_TOKEN" -Value $EffectiveAdminToken)
+    }
+
+    if ($EffectiveCorsOrigins) {
+        $assignments += (Build-ApiEnvAssignment -Name "CORS_ALLOWED_ORIGINS" -Value $EffectiveCorsOrigins)
+    }
+
+    foreach ($passThroughName in @(
+        "POSTGRES_HOST",
+        "POSTGRES_PORT",
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "ENABLE_DEBUG_ROUTES",
+        "APP_VERSION"
+    )) {
+        $passValue = [Environment]::GetEnvironmentVariable($passThroughName)
+        if ($passValue -and $passValue.Trim()) {
+            $assignments += (Build-ApiEnvAssignment -Name $passThroughName -Value $passValue.Trim())
+        }
+    }
+
+    return ($assignments | Where-Object { $_ }) -join "; "
+}
+
 $EffectiveGoldBackend = Resolve-StackGoldBackend -Explicit $GoldBackend
+$EffectiveAppEnv = Resolve-StackAppEnv -Explicit $AppEnv
+$EffectiveAdminToken = Resolve-StackSetting -ParamValue $AdminBearerToken -EnvName "ADMIN_BEARER_TOKEN"
+$EffectiveCorsOrigins = Resolve-StackSetting -ParamValue $CorsAllowedOrigins -EnvName "CORS_ALLOWED_ORIGINS"
+$EffectiveEnableAdminRoutes = Resolve-StackEnableAdminRoutes -Explicit $EnableAdminRoutes -EffectiveAppEnv $EffectiveAppEnv
+$EffectiveRateLimitEnabled = Resolve-StackRateLimitEnabled -Explicit $RateLimitEnabled -EffectiveAppEnv $EffectiveAppEnv
+$EffectiveRateLimitPerMinute = Resolve-StackRateLimitPerMinute -Explicit $RateLimitPerMinute -EffectiveAppEnv $EffectiveAppEnv
+
+$AdminTokenStatus = if ($EffectiveAdminToken) { "set" } else { "missing" }
+
+if ($EffectiveAppEnv -in @("production", "prod")) {
+    if (-not $EffectiveAdminToken -or $EffectiveAdminToken.Trim().Length -lt 16) {
+        throw @"
+APP_ENV=production exige ADMIN_BEARER_TOKEN forte (minimo 16 caracteres).
+Use -AdminBearerToken <token> ou defina `$env:ADMIN_BEARER_TOKEN antes de executar o script.
+"@
+    }
+}
 
 $HasProblems = $false
 
@@ -128,13 +314,28 @@ if ($HasProblems) {
 }
 
 if (-not $SkipApi) {
-    Write-Host "Starting API with GOLD_BACKEND=$EffectiveGoldBackend" -ForegroundColor Cyan
+    $EnvLauncher = Build-ApiEnvLauncher `
+        -EffectiveGoldBackend $EffectiveGoldBackend `
+        -EffectiveAppEnv $EffectiveAppEnv `
+        -EffectiveAdminToken $EffectiveAdminToken `
+        -EffectiveCorsOrigins $EffectiveCorsOrigins `
+        -EffectiveEnableAdminRoutes $EffectiveEnableAdminRoutes `
+        -EffectiveRateLimitEnabled $EffectiveRateLimitEnabled `
+        -EffectiveRateLimitPerMinute $EffectiveRateLimitPerMinute
+
+    Write-Host "Starting API with configuracao efetiva:" -ForegroundColor Cyan
+    Write-Host "  APP_ENV=$EffectiveAppEnv"
+    Write-Host "  GOLD_BACKEND=$EffectiveGoldBackend"
+    Write-Host "  ENABLE_ADMIN_ROUTES=$EffectiveEnableAdminRoutes"
+    Write-Host "  RATE_LIMIT_ENABLED=$EffectiveRateLimitEnabled"
+    Write-Host "  RATE_LIMIT_PER_MINUTE=$EffectiveRateLimitPerMinute"
+    Write-Host "  ADMIN_BEARER_TOKEN=$AdminTokenStatus"
 
     if (Test-Path $VenvPython) {
-        $ApiLauncher = "`$env:GOLD_BACKEND='$EffectiveGoldBackend'; & '$VenvPython' -m uvicorn app.main:app --reload --host $ApiHost --port $ApiPort"
+        $ApiLauncher = "$EnvLauncher; & '$VenvPython' -m uvicorn app.main:app --reload --host $ApiHost --port $ApiPort"
     }
     else {
-        $ApiLauncher = "`$env:GOLD_BACKEND='$EffectiveGoldBackend'; python -m uvicorn app.main:app --reload --host $ApiHost --port $ApiPort"
+        $ApiLauncher = "$EnvLauncher; python -m uvicorn app.main:app --reload --host $ApiHost --port $ApiPort"
     }
 
     $ApiCommand = "Set-Location -LiteralPath '$ProjectRoot'; $ApiLauncher"
@@ -172,7 +373,13 @@ if (-not $SkipApi) {
     Write-Host "Docs:      http://${ApiHost}:$ApiPort/docs"
     Write-Host "Health:    http://${ApiHost}:$ApiPort/health"
     Write-Host "Ready:     http://${ApiHost}:$ApiPort/ready"
-    Write-Host "GOLD_BACKEND=$EffectiveGoldBackend (processo da API)"
+    Write-Host "APP_ENV=$EffectiveAppEnv | GOLD_BACKEND=$EffectiveGoldBackend"
+    if ($EffectiveAppEnv -in @("production", "prod")) {
+        Write-Host "Smoke: python scripts/smoke_platform.py --expect-gold-backend $EffectiveGoldBackend --admin-bearer-token <token> --skip-front"
+    }
+    else {
+        Write-Host "Smoke: python scripts/smoke_platform.py --expect-gold-backend $EffectiveGoldBackend --skip-front"
+    }
 }
 
 if (-not $SkipDashboard) {
@@ -188,4 +395,3 @@ Write-Host "  - Feche as janelas PowerShell abertas para API e/ou dashboard"
 Write-Host "  - Ou pressione Ctrl+C em cada janela"
 Write-Host ""
 Write-Host "Dica: confira GET /ready e o log de startup da API (gold_backend=...)."
-Write-Host "Smoke: python scripts/smoke_platform.py --expect-gold-backend $EffectiveGoldBackend --skip-front"
