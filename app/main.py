@@ -13,9 +13,20 @@ from app.api.routes_gold import router as gold_router
 from app.api.routes_ict import router as ict_router
 from app.api.routes_map import router as map_router
 from app.api.routes_ops import router as ops_router
-from app.core.config import API_LOG_FILE, CORS_ALLOWED_ORIGINS, ENABLE_DEBUG_ROUTES, is_production_env, resolve_gold_backend
+from app.core.config import (
+    API_LOG_FILE,
+    CORS_ALLOWED_ORIGINS,
+    ENABLE_ADMIN_ROUTES,
+    ENABLE_DEBUG_ROUTES,
+    RATE_LIMIT_ENABLED,
+    RATE_LIMIT_PER_MINUTE,
+    is_production_env,
+    resolve_gold_backend,
+)
 from app.core.logging import setup_logger
+from app.core.production_config import assert_production_config
 from app.core.public_errors import sanitize_public_error_details
+from app.core.rate_limit import RateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.services.gold_readiness import build_readiness_report
 
@@ -23,6 +34,8 @@ logger = setup_logger("api", API_LOG_FILE)
 
 
 def create_app() -> FastAPI:
+    assert_production_config()
+
     docs_kwargs: dict[str, str | None] = {}
     if is_production_env():
         docs_kwargs = {
@@ -46,12 +59,19 @@ def create_app() -> FastAPI:
         ],
     )
     application.add_middleware(SecurityHeadersMiddleware)
+    application.add_middleware(
+        RateLimitMiddleware,
+        enabled=RATE_LIMIT_ENABLED,
+        per_minute=RATE_LIMIT_PER_MINUTE,
+    )
 
     application.include_router(map_router)
     application.include_router(gold_router)
     application.include_router(ict_router)
     application.include_router(ops_router)
-    application.include_router(admin_router)
+
+    if ENABLE_ADMIN_ROUTES:
+        application.include_router(admin_router)
 
     if ENABLE_DEBUG_ROUTES:
         application.include_router(debug_router)
@@ -71,10 +91,13 @@ def create_app() -> FastAPI:
     @application.on_event("startup")
     def on_startup() -> None:
         logger.info(
-            "API iniciada | service=caged-dashboard-api | env=%s | version=%s | debug_routes=%s | gold_backend=%s",
+            "API iniciada | service=caged-dashboard-api | env=%s | version=%s | "
+            "debug_routes=%s | admin_routes=%s | rate_limit=%s | gold_backend=%s",
             os.getenv("APP_ENV", "local"),
             os.getenv("APP_VERSION", "dev"),
             ENABLE_DEBUG_ROUTES,
+            ENABLE_ADMIN_ROUTES,
+            RATE_LIMIT_ENABLED,
             resolve_gold_backend(),
         )
 

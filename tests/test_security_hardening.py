@@ -9,16 +9,30 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
+PROD_SAFE_ENV = {
+    "APP_ENV": "production",
+    "ADMIN_BEARER_TOKEN": "local-production-smoke-secret",
+    "POSTGRES_USER": "caged_readonly",
+    "POSTGRES_PASSWORD": "secure-readonly-test-password",
+    "GOLD_BACKEND": "postgis",
+    "ENABLE_ADMIN_ROUTES": "false",
+    "RATE_LIMIT_ENABLED": "false",
+}
+
 
 def _reload_app(monkeypatch: pytest.MonkeyPatch, **env: str) -> TestClient:
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     import app.api.routes_ops as ops_module
     import app.core.config as config_module
+    import app.core.production_config as production_config_module
+    import app.core.rate_limit as rate_limit_module
     import app.core.security as security_module
     import app.main as main_module
 
     importlib.reload(config_module)
+    importlib.reload(production_config_module)
+    importlib.reload(rate_limit_module)
     importlib.reload(security_module)
     importlib.reload(ops_module)
     importlib.reload(main_module)
@@ -246,7 +260,7 @@ def test_format_readiness_problems_development_preserves_details() -> None:
 
 
 def test_production_hides_openapi_docs(monkeypatch: pytest.MonkeyPatch) -> None:
-    client = _reload_app(monkeypatch, APP_ENV="production", ADMIN_BEARER_TOKEN="prod-token")
+    client = _reload_app(monkeypatch, **PROD_SAFE_ENV)
     assert client.get("/docs").status_code == 404
     assert client.get("/redoc").status_code == 404
     assert client.get("/openapi.json").status_code == 404
@@ -279,11 +293,7 @@ def test_ops_fallbacks_public_in_development(monkeypatch: pytest.MonkeyPatch) ->
 def test_ops_fallbacks_blocked_in_production_without_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = _reload_app(
-        monkeypatch,
-        APP_ENV="production",
-        ADMIN_BEARER_TOKEN="prod-token",
-    )
+    client = _reload_app(monkeypatch, **PROD_SAFE_ENV)
     response = client.get("/api/ops/fallbacks")
     assert response.status_code == 401
 
@@ -291,22 +301,55 @@ def test_ops_fallbacks_blocked_in_production_without_token(
 def test_ops_fallbacks_allowed_in_production_with_token(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    client = _reload_app(
-        monkeypatch,
-        APP_ENV="production",
-        ADMIN_BEARER_TOKEN="prod-token",
-    )
+    client = _reload_app(monkeypatch, **PROD_SAFE_ENV)
     response = client.get(
         "/api/ops/fallbacks",
-        headers={"Authorization": "Bearer prod-token"},
+        headers={"Authorization": "Bearer local-production-smoke-secret"},
     )
     assert response.status_code == 200
 
 
-def test_ops_fallbacks_hidden_when_production_token_not_configured(
+def test_production_admin_routes_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = _reload_app(monkeypatch, **PROD_SAFE_ENV)
+    response = client.post(
+        "/api/admin/load/fact-municipio?ano=2026&mes=4",
+        headers={"Authorization": "Bearer local-production-smoke-secret"},
+    )
+    assert response.status_code == 404
+
+
+def test_production_admin_routes_enabled_without_token_blocked(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("ADMIN_BEARER_TOKEN", raising=False)
-    client = _reload_app(monkeypatch, APP_ENV="production")
-    response = client.get("/api/ops/fallbacks")
-    assert response.status_code == 404
+    env = {**PROD_SAFE_ENV, "ENABLE_ADMIN_ROUTES": "true"}
+    client = _reload_app(monkeypatch, **env)
+    response = client.post("/api/admin/load/fact-municipio?ano=2026&mes=4")
+    assert response.status_code == 401
+
+
+def test_production_admin_routes_enabled_with_token_protected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    env = {**PROD_SAFE_ENV, "ENABLE_ADMIN_ROUTES": "true"}
+    client = _reload_app(monkeypatch, **env)
+    with patch("app.api.routes_admin.load_fact_emprego_municipio") as mock_load:
+        mock_load.return_value = None
+        response = client.post(
+            "/api/admin/load/fact-municipio?ano=2026&mes=4",
+            headers={"Authorization": "Bearer local-production-smoke-secret"},
+        )
+    assert response.status_code == 200
+    mock_load.assert_called_once_with(ano=2026, mes=4)
+
+
+def test_production_startup_rejects_missing_admin_token() -> None:
+    from app.core.production_config import ProductionConfigError, validate_production_config
+
+    with pytest.raises(ProductionConfigError, match="ADMIN_BEARER_TOKEN"):
+        validate_production_config(
+            app_env="production",
+            admin_bearer_token="",
+            postgres_user="caged_readonly",
+            postgres_password="secure-readonly-test-password",
+            gold_backend="postgis",
+        )

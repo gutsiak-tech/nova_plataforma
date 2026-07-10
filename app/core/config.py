@@ -87,12 +87,44 @@ POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "postgres")
 # =========================
 APP_ENV = os.getenv("APP_ENV", "local").strip().lower()
 ADMIN_BEARER_TOKEN = os.getenv("ADMIN_BEARER_TOKEN", "").strip()
+
+
+def is_production_env() -> bool:
+    return APP_ENV in ("production", "prod")
+
+
 ENABLE_DEBUG_ROUTES = os.getenv("ENABLE_DEBUG_ROUTES", "false").strip().lower() in (
     "1",
     "true",
     "yes",
     "on",
 )
+
+
+def _env_bool(name: str, *, default: bool) -> bool:
+    raw = os.getenv(name, "").strip().lower()
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    if raw in ("0", "false", "no", "off"):
+        return False
+    return default
+
+
+def resolve_enable_admin_routes() -> bool:
+    """Em produção desabilitado por padrão; em dev/local habilitado por padrão."""
+    return _env_bool("ENABLE_ADMIN_ROUTES", default=not is_production_env())
+
+
+ENABLE_ADMIN_ROUTES = resolve_enable_admin_routes()
+
+
+def resolve_rate_limit_enabled() -> bool:
+    """Habilitado por padrão em produção; desabilitado em dev/local."""
+    return _env_bool("RATE_LIMIT_ENABLED", default=is_production_env())
+
+
+RATE_LIMIT_ENABLED = resolve_rate_limit_enabled()
+RATE_LIMIT_PER_MINUTE = max(1, min(int(os.getenv("RATE_LIMIT_PER_MINUTE", "60")), 10_000))
 
 _DEFAULT_CORS_ORIGINS = (
     "http://localhost:5173",
@@ -112,10 +144,6 @@ def parse_cors_allowed_origins(raw: str | None = None) -> list[str]:
 
 
 CORS_ALLOWED_ORIGINS = parse_cors_allowed_origins()
-
-
-def is_production_env() -> bool:
-    return APP_ENV in ("production", "prod")
 
 # =========================
 # Logs

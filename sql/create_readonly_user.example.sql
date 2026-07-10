@@ -1,9 +1,12 @@
 -- Exemplo: usuário PostgreSQL read-only para a API em produção
--- NÃO executar automaticamente. Ajuste nomes de tabelas/views conforme o schema real.
+-- NÃO executar automaticamente. Ajuste nomes de banco/objetos conforme o ambiente.
 -- Substitua 'change-me-strong-password' antes de aplicar.
+--
+-- IMPORTANTE: tabelas e views analíticas ficam nos schemas geo e serving (não public).
+-- A API em produção deve usar POSTGRES_USER=caged_readonly.
 
--- Conectar como superuser (ex.: postgres) no banco alvo:
---   psql -U postgres -d caged -f sql/create_readonly_user.example.sql
+-- Conectar como superuser (ex.: postgres) no cluster:
+--   psql -U postgres -d postgres -f sql/create_readonly_user.example.sql
 
 DO $$
 BEGIN
@@ -13,27 +16,29 @@ BEGIN
 END
 $$;
 
-GRANT CONNECT ON DATABASE caged TO caged_readonly;
+-- Ajuste o nome do banco (ex.: plataforma ou caged)
+GRANT CONNECT ON DATABASE plataforma TO caged_readonly;
 
-\c caged
+\c plataforma
 
-GRANT USAGE ON SCHEMA public TO caged_readonly;
+GRANT USAGE ON SCHEMA geo TO caged_readonly;
+GRANT USAGE ON SCHEMA serving TO caged_readonly;
 
--- Tabelas/views Gold analíticas (ajuste a lista após \dt no schema public)
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO caged_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA geo TO caged_readonly;
+GRANT SELECT ON ALL TABLES IN SCHEMA serving TO caged_readonly;
 
--- Garantir SELECT em objetos criados no futuro (opcional; revisar política institucional)
-ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA geo TO caged_readonly;
+GRANT SELECT ON ALL SEQUENCES IN SCHEMA serving TO caged_readonly;
+
+-- Objetos futuros (opcional; revisar política institucional)
+ALTER DEFAULT PRIVILEGES IN SCHEMA geo
+    GRANT SELECT ON TABLES TO caged_readonly;
+ALTER DEFAULT PRIVILEGES IN SCHEMA serving
     GRANT SELECT ON TABLES TO caged_readonly;
 
--- Revogar escrita explícita (defesa em profundidade se o role herdou permissões)
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA public FROM caged_readonly;
-
--- PostGIS: leitura de geometrias
-GRANT USAGE ON SCHEMA public TO caged_readonly;
-
--- Sequências (somente leitura, se necessário para algumas views)
-GRANT SELECT ON ALL SEQUENCES IN SCHEMA public TO caged_readonly;
+-- Defesa em profundidade: revogar escrita explícita
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA geo FROM caged_readonly;
+REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON ALL TABLES IN SCHEMA serving FROM caged_readonly;
 
 -- Não conceder CREATE, DROP, ou superuser.
--- A API deve usar POSTGRES_USER=caged_readonly em produção.
+-- Loaders/migrations devem usar outro usuário (ex.: postgres ou caged_loader).
