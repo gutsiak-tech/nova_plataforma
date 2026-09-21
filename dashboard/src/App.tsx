@@ -22,6 +22,9 @@ const CountryPage = lazy(() =>
 )
 const SalaryPage = lazy(() => import('./pages/SalaryPage').then((m) => ({ default: m.SalaryPage })))
 const IctPage = lazy(() => import('./pages/IctPage').then((m) => ({ default: m.IctPage })))
+const IcttV2Page = lazy(() =>
+  import('./pages/IcttV2Page').then((m) => ({ default: m.IcttV2Page })),
+)
 const AboutDataPage = lazy(() =>
   import('./pages/AboutDataPage').then((m) => ({ default: m.AboutDataPage })),
 )
@@ -103,6 +106,14 @@ export default function App() {
           element={
             <Suspense fallback={<PageFallback />}>
               <IctPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="ict-v2"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <IcttV2Page />
             </Suspense>
           }
         />
