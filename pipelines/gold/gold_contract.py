@@ -80,6 +80,12 @@ ICTT_GOLD_TABLES: tuple[str, ...] = (
     "tabela_ictt_municipio_rmc",
 )
 
+# ICTT v2.0 paralelo à V1. Fora de CURRENT_PIPELINE_TABLES nesta rodada
+# (não entra na whitelist da API / no catálogo público).
+ICTT_V2_GOLD_TABLES: tuple[str, ...] = (
+    "tabela_ictt_v2_municipio_pr",
+)
+
 # Total de nomes físicos gerados por competência (CURRENT_PIPELINE_TABLES + ICTT).
 CURRENT_PIPELINE_TABLE_COUNT = 59
 

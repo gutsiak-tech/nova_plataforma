@@ -1,0 +1,80 @@
+{
+  "methodology_version": "2.0",
+  "normalization_version": "NORM_B.2026-01_2026-04.N233",
+  "reference_scope": "PR",
+  "reference_start": "2026-01",
+  "reference_end": "2026-04",
+  "reference_min_admissions": 10,
+  "reference_pooled_n": 233,
+  "shannon_universe": "all_movements",
+  "shannon_universe_note": "NORM_B foi estimado sobre Shannon de todas as movimentacoes (admissoes+desligamentos), igual a aggregate_municipal_indicators. Shannon apenas em admissoes altera P05/P95 (ex. CBO 0.1505/3.7645) e e proibido nesta versao congelada.",
+  "weight_absorption": 0.25,
+  "weight_remuneration": 0.25,
+  "weight_contract_quality": 0.25,
+  "weight_diversification": 0.25,
+  "absorption_volume_weight": 0.5,
+  "absorption_balance_weight": 0.5,
+  "contract_quality_partial_weight": 0.5,
+  "contract_quality_intermittent_weight": 0.5,
+  "diversification_cbo_weight": 0.3333333333333333,
+  "diversification_subclasse_weight": 0.3333333333333333,
+  "diversification_secao_weight": 0.3333333333333333,
+  "balance_c": 5,
+  "balance_lambda": 10,
+  "partial_penalty_k": 10,
+  "intermittent_penalty_k": 10,
+  "min_admissions_calculable": 10,
+  "robust_admissions_threshold": 20,
+  "r4_intermittent_canonical_field": "indtrabintermitente",
+  "r4_salary_field": "salario",
+  "r4_salary_lower_sm": 0.3,
+  "r4_salary_upper_sm": 150.0,
+  "salario_minimo_por_ano": {
+    "2025": 1518.0,
+    "2026": 1621.0
+  },
+  "norm_b": {
+    "a_volume_raw": {
+      "p05": 2.4501020989921485,
+      "p95": 6.142462434403312
+    },
+    "salario_relativo_r4": {
+      "p05": 0.9171355258718404,
+      "p95": 1.1088357804607327
+    },
+    "shannon_cbo": {
+      "p05": 0.16456678413048284,
+      "p95": 3.880477445619719
+    },
+    "shannon_subclasse": {
+      "p05": 0.2523631950441531,
+      "p95": 4.010251774291845
+    },
+    "shannon_secao": {
+      "p05": 0.0,
+      "p95": 1.9144199381442684
+    }
+  },
+  "published_fingerprints_4dp": {
+    "a_volume_raw": {
+      "p05": 2.4501,
+      "p95": 6.1425
+    },
+    "salario_relativo_r4": {
+      "p05": 0.9171,
+      "p95": 1.1088
+    },
+    "shannon_cbo": {
+      "p05": 0.1646,
+      "p95": 3.8805
+    },
+    "shannon_subclasse": {
+      "p05": 0.2524,
+      "p95": 4.0103
+    },
+    "shannon_secao": {
+      "p05": 0.0,
+      "p95": 1.9144
+    }
+  }
+}
