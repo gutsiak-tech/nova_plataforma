@@ -1,8 +1,6 @@
-"""
-Cálculo do ICTT v2.0 — paralelo à V1.
+"""Cálculo do ICTT v2.0.
 
-Não substitui ``compute_ictt.py``. Não grava ``tabela_ictt_municipio_pr``.
-Não recalcula P05/P95. Não altera API, frontend nem PostGIS.
+Job paralelo à V1: não grava ``tabela_ictt_municipio_pr`` e não recalcula P05/P95.
 """
 
 from __future__ import annotations

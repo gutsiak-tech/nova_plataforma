@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -22,20 +23,32 @@ from pipelines.silver.clean_caged import (
     normalizar_nome_coluna,
 )
 
-HOLDOUT_CANDIDATES = (
-    Path(r"C:\Users\gutsi\Documents\CC\empresa\ORGMIGRA\PADF\plataforma\RAIS_CTPS_CAGED_2025_MOV.csv"),
-    Path(r"C:\Users\gutsi\Documents\CC\nova_plataforma\data-lake\raw\migrantes\ano=2025\RAIS_CTPS_CAGED_2025_MOV.csv"),
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+_HOLDOUT_RELATIVE = (
+    _REPO_ROOT
+    / "data-lake"
+    / "raw"
+    / "migrantes"
+    / "ano=2025"
+    / "RAIS_CTPS_CAGED_2025_MOV.csv"
 )
-
 HOLDOUT_2025_01 = {"n_calculable": 53, "mean_ictt": 62.64, "foz_rank": 1}
 MEAN_ATOL = 0.08
-_HOLDOUT_NOT_RUN = "HOLDOUT_REGRESSION_NOT_RUN"
+_HOLDOUT_NOT_RUN = (
+    "Holdout 2025 skipped: dataset externo ausente. "
+    "Defina ICTT_V2_HOLDOUT_CSV ou coloque o CSV em "
+    "data-lake/raw/migrantes/ano=2025/. O arquivo não é versionado."
+)
 
 
 def _holdout_path() -> Path | None:
-    for path in HOLDOUT_CANDIDATES:
-        if path.is_file():
-            return path
+    env = os.environ.get("ICTT_V2_HOLDOUT_CSV")
+    if env:
+        candidate = Path(env)
+        if candidate.is_file():
+            return candidate
+    if _HOLDOUT_RELATIVE.is_file():
+        return _HOLDOUT_RELATIVE
     return None
 
 

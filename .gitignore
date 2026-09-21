@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# --- Editor / assistant tooling (local only) ---
+.cursor/
+.claude/
+.ai/
+
 # --- Python ---
 .venv/
 venv/
@@ -48,6 +53,7 @@ logs/
 node_modules/
 dashboard/node_modules/
 dashboard/dist/
+dist/
 
 # --- OS ---
 .DS_Store
