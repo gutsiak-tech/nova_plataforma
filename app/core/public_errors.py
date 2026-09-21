@@ -17,6 +17,10 @@ _PUBLIC_ERROR_DETAIL_KEYS = frozenset(
         "sort_dir",
         "limit",
         "offset",
+        "competencia",
+        "codigo_municipio",
+        "universe",
+        "reliability",
     }
 )
 

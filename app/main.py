@@ -11,6 +11,7 @@ from app.api.routes_admin import router as admin_router
 from app.api.routes_debug import router as debug_router
 from app.api.routes_gold import router as gold_router
 from app.api.routes_ict import router as ict_router
+from app.api.routes_ictt_v2 import router as ictt_v2_router
 from app.api.routes_map import router as map_router
 from app.api.routes_ops import router as ops_router
 from app.core.config import (
@@ -44,7 +45,21 @@ def create_app() -> FastAPI:
             "openapi_url": None,
         }
 
-    application = FastAPI(title="Projeto CAGED API", version="1.0.0", **docs_kwargs)
+    application = FastAPI(
+        title="Projeto CAGED API",
+        version="1.0.0",
+        openapi_tags=[
+            {
+                "name": "ict-v2",
+                "description": (
+                    "ICTT methodology version 2.0. Endpoints versionados em paralelo "
+                    "à V1 (/api/ict/v1), que permanece ativa e não depreciada. "
+                    "Fonte canônica: Gold Parquet ictt_v2. A API não recalcula o índice."
+                ),
+            }
+        ],
+        **docs_kwargs,
+    )
 
     application.add_middleware(
         CORSMiddleware,
@@ -68,6 +83,7 @@ def create_app() -> FastAPI:
     application.include_router(map_router)
     application.include_router(gold_router)
     application.include_router(ict_router)
+    application.include_router(ictt_v2_router)
     application.include_router(ops_router)
 
     if ENABLE_ADMIN_ROUTES:
