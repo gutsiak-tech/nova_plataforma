@@ -3,8 +3,8 @@
   "crs": "EPSG:4326",
   "simplify_tolerance": 0.0005,
   "source_files": {
-    "ufs_shp": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geodata\\ufs\\BR_UF_2024.shp",
-    "mun_pr_shp": "C:\\Users\\gutsi\\Documents\\CC\\empresa\\ORGMIGRA\\ORGMIGRA\\Interiorizacao\\shapes\\PR_Municipios_2024.shp"
+    "ufs_shp": "BR_UF_2024.shp",
+    "mun_pr_shp": "PR_Municipios_2024.shp"
   },
   "detected_columns": {
     "ufs": {
@@ -20,9 +20,9 @@
     }
   },
   "outputs": {
-    "ufs.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\ufs.geojson",
-    "municipios_pr.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\municipios_pr.geojson",
-    "municipios_rmc.geojson": "C:\\Users\\gutsi\\Documents\\CC\\projeto_caged_teste\\data-lake\\geo\\processed\\municipios_rmc.geojson"
+    "ufs.geojson": "data-lake/geo/processed/ufs.geojson",
+    "municipios_pr.geojson": "data-lake/geo/processed/municipios_pr.geojson",
+    "municipios_rmc.geojson": "data-lake/geo/processed/municipios_rmc.geojson"
   },
   "counts": {
     "ufs_count": 27,
