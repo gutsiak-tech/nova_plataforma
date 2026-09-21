@@ -165,9 +165,38 @@ describe('IcttV2Page', () => {
   it('troca universo n20 para n10 e aplica fingerprints', async () => {
     render(<IcttV2Page />)
     await waitFor(() => expect(screen.getByText('Foz do Iguaçu')).toBeTruthy())
+    expect(screen.getByText('82,9')).toBeTruthy()
     expect(screen.queryByText('Guarapuava')).toBeNull()
     fireEvent.click(screen.getByRole('radio', { name: 'N ≥ 10' }))
     await waitFor(() => expect(screen.getByText('Guarapuava')).toBeTruthy())
     expect(fetchIcttV2Ranking).toHaveBeenCalledWith('2026-04', 'n10', expect.anything())
+  })
+
+  it('mantém Paraná no recorte e um único seletor de competência da V2', async () => {
+    render(<IcttV2Page />)
+    await waitFor(() => expect(screen.getByLabelText('Competência abr/26')).toBeTruthy())
+    expect(screen.getByText(/Índice de Competitividade Territorial do Trabalho · Paraná/)).toBeTruthy()
+    expect(screen.getAllByText('Competência ICTT v2')).toHaveLength(1)
+    expect(screen.queryByLabelText('Selecionar competência')).toBeNull()
+  })
+
+  it('abre a metodologia em português com identificador técnico discreto', async () => {
+    render(<IcttV2Page />)
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Metodologia' })).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Metodologia' }))
+    expect(screen.getByText('Metodologia ICTT — versão 2.0')).toBeTruthy()
+    expect(
+      screen.getByText('Paraná · janeiro a abril de 2026 · municípios com pelo menos 10 admissões'),
+    ).toBeTruthy()
+    expect(screen.getByText('Identificador técnico: NORM_B.2026-01_2026-04.N233')).toBeTruthy()
+  })
+
+  it('abre Foz no detalhe com ICTT 82,9 e maior robustez', async () => {
+    render(<IcttV2Page />)
+    await waitFor(() => expect(screen.getByText('Foz do Iguaçu')).toBeTruthy())
+    fireEvent.click(screen.getByText('Foz do Iguaçu'))
+    await waitFor(() => expect(screen.getByText('Maior robustez.')).toBeTruthy())
+    expect(screen.getAllByText('82,9').length).toBeGreaterThan(1)
+    expect(screen.getByText(/Código IBGE 4108304/)).toBeTruthy()
   })
 })

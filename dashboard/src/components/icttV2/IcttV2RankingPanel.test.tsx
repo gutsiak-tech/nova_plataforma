@@ -47,6 +47,7 @@ describe('IcttV2RankingPanel', () => {
       />,
     )
     expect(screen.getByText('Foz do Iguaçu')).toBeTruthy()
+    expect(screen.getByText('82,9')).toBeTruthy()
     expect(screen.getByText('Guarapuava')).toBeTruthy()
     expect(screen.getByText('Confiabilidade reduzida')).toBeTruthy()
     expect(screen.getByText('Maior robustez')).toBeTruthy()

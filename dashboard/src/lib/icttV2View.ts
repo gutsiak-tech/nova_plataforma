@@ -62,6 +62,21 @@ const SHORT_MONTH = [
   'dez',
 ] as const
 
+const LONG_MONTH = [
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const
+
 export function pickLatestCompetencia(competencias: string[]): string | null {
   const valid = competencias.filter((item) => /^\d{4}-(0[1-9]|1[0-2])$/.test(item))
   if (valid.length === 0) return null
@@ -76,6 +91,52 @@ export function formatCompetenciaShort(competencia: string): string {
   const label = SHORT_MONTH[month - 1]
   if (!label) return competencia
   return `${label}/${year.slice(-2)}`
+}
+
+function parseYearMonth(value: string): { year: number; month: number } | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(value)
+  if (!match) return null
+  const year = Number(match[1])
+  const month = Number(match[2])
+  if (!Number.isInteger(year) || month < 1 || month > 12) return null
+  return { year, month }
+}
+
+export function formatReferenceScopeLabel(scope: string): string {
+  const normalized = scope.trim().toLowerCase()
+  if (normalized === 'pr') return 'Paraná'
+  if (normalized === 'br') return 'Brasil'
+  if (normalized === 'rmc') return 'RMC'
+  return scope
+}
+
+export function formatReferencePeriodLabel(start: string, end: string): string {
+  const from = parseYearMonth(start)
+  const to = parseYearMonth(end)
+  if (!from || !to) return `${start} a ${end}`
+  const fromMonth = LONG_MONTH[from.month - 1]
+  const toMonth = LONG_MONTH[to.month - 1]
+  if (!fromMonth || !toMonth) return `${start} a ${end}`
+  if (from.year === to.year && from.month === to.month) {
+    return `${fromMonth} de ${from.year}`
+  }
+  if (from.year === to.year) {
+    return `${fromMonth} a ${toMonth} de ${from.year}`
+  }
+  return `${fromMonth} de ${from.year} a ${toMonth} de ${to.year}`
+}
+
+export function formatNormalizationAudienceLabel(input: {
+  reference_scope: string
+  reference_period: { start: string; end: string }
+  eligibility: { min_admissions: number }
+}): string {
+  const scope = formatReferenceScopeLabel(input.reference_scope)
+  const period = formatReferencePeriodLabel(
+    input.reference_period.start,
+    input.reference_period.end,
+  )
+  return `${scope} · ${period} · municípios com pelo menos ${input.eligibility.min_admissions} admissões`
 }
 
 export function numericOrNull(value: unknown): number | null {
@@ -94,7 +155,7 @@ export function formatIcttScore(value: number | null | undefined, digits = 1): s
 }
 
 export function formatIcttHeadline(value: number | null | undefined): string {
-  const formatted = formatIcttScore(value, 4)
+  const formatted = formatIcttScore(value, 1)
   return formatted ?? 'ICTT não calculável'
 }
 

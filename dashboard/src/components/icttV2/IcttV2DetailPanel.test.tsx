@@ -43,12 +43,12 @@ describe('IcttV2DetailPanel', () => {
   it('mostra fingerprints de Foz e dimensões', () => {
     render(<IcttV2DetailPanel detail={base} error={null} />)
     expect(screen.getByText('Foz do Iguaçu')).toBeTruthy()
-    expect(screen.getByText('82,8647')).toBeTruthy()
+    expect(screen.getByText('82,9')).toBeTruthy()
     expect(screen.getByText('Maior robustez.')).toBeTruthy()
-    expect(screen.getByText('Absorção')).toBeTruthy()
-    expect(screen.getByText('Remuneração')).toBeTruthy()
-    expect(screen.getByText('Qualidade contratual')).toBeTruthy()
-    expect(screen.getByText('Diversificação')).toBeTruthy()
+    expect(screen.getByText('78,2')).toBeTruthy()
+    expect(screen.getByText('90,9')).toBeTruthy()
+    expect(screen.getByText('68,7')).toBeTruthy()
+    expect(screen.getByText('93,7')).toBeTruthy()
   })
 
   it('explica município N<10 como não calculável', () => {
@@ -76,6 +76,6 @@ describe('IcttV2DetailPanel', () => {
     expect(
       screen.getByText(/menos de 10 admissões elegíveis para o critério de cálculo do ICTT/i),
     ).toBeTruthy()
-    expect(screen.queryByText('0,0000')).toBeNull()
+    expect(screen.queryByText('0,0')).toBeNull()
   })
 })

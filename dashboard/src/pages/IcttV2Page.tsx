@@ -224,7 +224,7 @@ export function IcttV2Page() {
 
   if (preview.municipalitiesError && !mapAlive) {
     return (
-      <div className="space-y-10">
+      <div className="space-y-6">
         <PageHeader
           eyebrow="Versão metodológica 2.0"
           title="ICTT v2.0"
@@ -248,7 +248,7 @@ export function IcttV2Page() {
   const showInitialLoader = municipalitiesLoading && rows.length === 0 && !preview.municipalitiesError
 
   return (
-    <div className="min-w-0 space-y-8">
+    <div className="min-w-0 space-y-5">
       <PageHeader
         eyebrow="Versão metodológica 2.0"
         title="ICTT v2.0"
@@ -279,7 +279,7 @@ export function IcttV2Page() {
         <>
           <div
             className={[
-              'grid gap-4 sm:grid-cols-2 xl:grid-cols-4',
+              'grid gap-3 sm:grid-cols-2 xl:grid-cols-4 [&>div]:!min-h-[10rem] [&>div]:!pt-4',
               refreshing ? 'opacity-[0.88] transition-opacity duration-200' : '',
             ]
               .filter(Boolean)
@@ -315,7 +315,7 @@ export function IcttV2Page() {
             {summary.methodologyVersion ?? methodology?.methodology_version ?? '2.0'}
           </p>
 
-          <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
+          <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.4fr)_minmax(20rem,0.9fr)]">
             <IcttV2Map
               rows={rows}
               competenciaLabel={competenciaLabel}

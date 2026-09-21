@@ -3,6 +3,9 @@ import {
   DEFAULT_RANKING_UNIVERSE,
   formatIcttHeadline,
   formatIcttScore,
+  formatNormalizationAudienceLabel,
+  formatReferencePeriodLabel,
+  formatReferenceScopeLabel,
   numericOrNull,
   pickLatestCompetencia,
   rankingUniverseQuery,
@@ -44,7 +47,8 @@ describe('icttV2View', () => {
     expect(numericOrNull(Number.NaN)).toBeNull()
     expect(formatIcttScore(null)).toBeNull()
     expect(formatIcttHeadline(null)).toBe('ICTT não calculável')
-    expect(formatIcttHeadline(0)).toBe('0,0000')
+    expect(formatIcttHeadline(0)).toBe('0,0')
+    expect(formatIcttHeadline(82.86469407999354)).toBe('82,9')
   })
 
   it('resume abril com 399 / 59 / reduced / higher', () => {
@@ -104,5 +108,17 @@ describe('icttV2View', () => {
     expect(DEFAULT_RANKING_UNIVERSE).toBe('n20')
     expect(rankingUniverseQuery('n10')).toBe('n10')
     expect(rankingUniverseQuery('n20')).toBe('n20')
+  })
+
+  it('descreve a referência de normalização em linguagem amigável', () => {
+    expect(formatReferenceScopeLabel('PR')).toBe('Paraná')
+    expect(formatReferencePeriodLabel('2026-01', '2026-04')).toBe('janeiro a abril de 2026')
+    expect(
+      formatNormalizationAudienceLabel({
+        reference_scope: 'PR',
+        reference_period: { start: '2026-01', end: '2026-04' },
+        eligibility: { min_admissions: 10 },
+      }),
+    ).toBe('Paraná · janeiro a abril de 2026 · municípios com pelo menos 10 admissões')
   })
 })

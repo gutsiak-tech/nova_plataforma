@@ -2,7 +2,12 @@ import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import type { IcttV2MethodologyResponse } from '../../api/icttV2Types'
-import { DIMENSION_COPY } from '../../lib/icttV2View'
+import {
+  DIMENSION_COPY,
+  formatNormalizationAudienceLabel,
+  formatReferencePeriodLabel,
+  formatReferenceScopeLabel,
+} from '../../lib/icttV2View'
 import { theme } from '../../lib/theme'
 
 function dimensionLabel(key: string): string {
@@ -53,7 +58,7 @@ export function IcttV2MethodologyDialog({
       >
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className={theme.typography.heroLabel}>ICTT methodology version 2.0</p>
+            <p className={theme.typography.heroLabel}>Metodologia ICTT — versão 2.0</p>
             <h2 id="ictt-v2-methodology-title" className={theme.typography.sectionTitle}>
               Metodologia
             </h2>
@@ -82,7 +87,12 @@ export function IcttV2MethodologyDialog({
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                 Referência de normalização
               </dt>
-              <dd>NORM_B · {data.normalization_version}</dd>
+              <dd>
+                <p>{formatNormalizationAudienceLabel(data)}</p>
+                <p className="mt-1 text-xs text-slate-500">
+                  Identificador técnico: {data.normalization_version}
+                </p>
+              </dd>
             </div>
             <div>
               <dt className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
@@ -112,7 +122,11 @@ export function IcttV2MethodologyDialog({
                 Recorte de referência
               </dt>
               <dd>
-                {data.reference_scope} · {data.reference_period.start} a {data.reference_period.end}
+                {formatReferenceScopeLabel(data.reference_scope)} ·{' '}
+                {formatReferencePeriodLabel(
+                  data.reference_period.start,
+                  data.reference_period.end,
+                )}
               </dd>
             </div>
           </dl>

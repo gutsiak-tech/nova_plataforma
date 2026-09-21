@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useSearchParams, type To } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useSearchParams, type To } from 'react-router-dom'
 import clsx from 'clsx'
 import {
   Activity,
@@ -21,6 +21,7 @@ import { ContextHint } from './ContextHint'
 import { CompetenciaBadge } from '../ui/CompetenciaBadge'
 import { DataSourceFooter } from '../ui/DataSourceFooter'
 import { TerritoryBackground } from '../map/TerritoryBackground'
+import { isIcttV2Path } from '../../lib/icttV2Route'
 import { theme } from '../../lib/theme'
 
 const nav = [
@@ -56,6 +57,8 @@ function SidebarCompetenciaCard() {
 
 function AppShellLayout() {
   const [searchParams] = useSearchParams()
+  const { pathname } = useLocation()
+  const icttV2 = isIcttV2Path(pathname)
 
   return (
     <div className={theme.shell.pageGradient}>
@@ -99,7 +102,7 @@ function AppShellLayout() {
           <TerritoryBackground />
 
           <div className="relative z-10 flex min-h-[calc(100vh-2.5rem)] flex-col">
-            <header className={theme.shell.globalHeaderClass}>
+            <header className={icttV2 ? 'mb-4 space-y-4' : theme.shell.globalHeaderClass}>
               <div className="flex items-start justify-between gap-3 lg:hidden">
                 <div>
                   <p className={theme.shell.sidebarBrandLabel}>Observatório de Migrantes</p>
@@ -108,9 +111,15 @@ function AppShellLayout() {
                 <CompetenciaBadge compact className="shrink-0" />
               </div>
 
-              <div className={theme.shell.globalControlsRowClass}>
+              <div
+                className={
+                  icttV2
+                    ? 'flex flex-col gap-3 xl:flex-row xl:flex-wrap xl:items-center xl:gap-5'
+                    : theme.shell.globalControlsRowClass
+                }
+              >
                 <ScopeToggle />
-                <MonthToggle />
+                {icttV2 ? null : <MonthToggle />}
                 <div className="hidden shrink-0 self-center lg:block xl:min-w-[22rem]">
                   <ContextHint />
                 </div>
