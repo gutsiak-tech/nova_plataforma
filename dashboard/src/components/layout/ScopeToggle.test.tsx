@@ -20,14 +20,15 @@ function renderOn(path: string) {
 }
 
 describe('escopo na rota ICTT v2', () => {
-  it('reconhece apenas a rota /ict-v2', () => {
+  it('reconhece /ict como experiência v2 e isola a V1 em /ict-v1', () => {
+    expect(isIcttV2Path('/ict')).toBe(true)
     expect(isIcttV2Path('/ict-v2')).toBe(true)
-    expect(isIcttV2Path('/ict')).toBe(false)
+    expect(isIcttV2Path('/ict-v1')).toBe(false)
     expect(isIcttV2Path('/')).toBe(false)
   })
 
-  it('mostra Paraná como escopo ativo em /ict-v2, sem sugerir recorte nacional', () => {
-    renderOn('/ict-v2')
+  it('mostra Paraná como escopo ativo em /ict, sem sugerir recorte nacional', () => {
+    renderOn('/ict')
     expect(screen.getByLabelText('Escopo Paraná').getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByLabelText('Escopo Brasil').getAttribute('aria-pressed')).toBe('false')
     expect(screen.getByLabelText('Escopo RMC').getAttribute('aria-pressed')).toBe('false')
@@ -40,8 +41,8 @@ describe('escopo na rota ICTT v2', () => {
     expect(screen.getByText('Paraná — recorte estadual.')).toBeTruthy()
   })
 
-  it('preserva Brasil como padrão fora de /ict-v2', () => {
-    renderOn('/ict')
+  it('preserva Brasil como padrão na V1 em /ict-v1', () => {
+    renderOn('/ict-v1')
     expect(screen.getByLabelText('Escopo Brasil').getAttribute('aria-pressed')).toBe('true')
     expect(screen.getByLabelText('Escopo Paraná').getAttribute('aria-pressed')).toBe('false')
     expect(screen.getByText('Brasil — visão nacional consolidada.')).toBeTruthy()

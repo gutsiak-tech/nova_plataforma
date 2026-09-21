@@ -105,18 +105,19 @@ export default function App() {
           path="ict"
           element={
             <Suspense fallback={<PageFallback />}>
-              <IctPage />
-            </Suspense>
-          }
-        />
-        <Route
-          path="ict-v2"
-          element={
-            <Suspense fallback={<PageFallback />}>
               <IcttV2Page />
             </Suspense>
           }
         />
+        <Route
+          path="ict-v1"
+          element={
+            <Suspense fallback={<PageFallback />}>
+              <IctPage />
+            </Suspense>
+          }
+        />
+        <Route path="ict-v2" element={<Navigate to="/ict" replace />} />
         <Route
           path="sobre"
           element={

@@ -80,7 +80,7 @@ function AppShellLayout() {
                 <NavLink
                   key={item.to}
                   to={navTarget(item.to, searchParams)}
-                  end={item.to === '/'}
+                  end={item.to === '/' || item.to === '/ict'}
                   className={({ isActive }) =>
                     clsx(
                       theme.shell.navLinkBase,
@@ -135,7 +135,7 @@ function AppShellLayout() {
                   <NavLink
                     key={item.to}
                     to={navTarget(item.to, searchParams)}
-                    end={item.to === '/'}
+                    end={item.to === '/' || item.to === '/ict'}
                     className={({ isActive }) =>
                       clsx(
                         'rounded-full px-3 py-1.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-orgmigra-blue-600/40',
